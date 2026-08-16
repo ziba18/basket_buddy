@@ -1,0 +1,141 @@
+import type { Session } from '@supabase/supabase-js';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react';
+
+import { readCache, writeCache } from '@/lib/local-cache';
+import { supabase } from '@/lib/supabase';
+import { Profile } from '@/types/shopping';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const profileCacheKey = (userId: string) => `cache:profile:${userId}`;
+
+interface AuthContextValue {
+  session: Session | null;
+  profile: Profile | null;
+  isLoading: boolean;
+  signUp: (email: string, password: string, nickname: string) => Promise<string | null>;
+  signIn: (email: string, password: string) => Promise<string | null>;
+  signInWithGoogle: () => Promise<string | null>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!isMounted) return;
+        setSession(data.session);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSession(null);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsLoading(false);
+      });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!isMounted) return;
+      setSession(nextSession);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId) return;
+    let isMounted = true;
+
+    readCache<Profile>(profileCacheKey(userId)).then((cached) => {
+      if (!isMounted || !cached) return;
+      setProfile(cached);
+    });
+
+    supabase
+      .from('profiles')
+      .select('id, nickname')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!isMounted || !data) return;
+        const fresh: Profile = { id: data.id, nickname: data.nickname };
+        setProfile(fresh);
+        writeCache(profileCacheKey(userId), fresh);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user.id]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      session,
+      profile: session ? profile : null,
+      isLoading,
+      signUp: async (email, password, nickname) => {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { nickname } },
+        });
+        return error?.message ?? null;
+      },
+      signIn: async (email, password) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return error?.message ?? null;
+      },
+      signInWithGoogle: async () => {
+        const redirectTo = AuthSession.makeRedirectUri();
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo, skipBrowserRedirect: true },
+        });
+        if (error || !data?.url) return error?.message ?? 'Could not start Google sign-in';
+
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        if (result.type !== 'success' || !result.url) return null;
+
+        const hashIndex = result.url.indexOf('#');
+        const params = new URLSearchParams(hashIndex >= 0 ? result.url.slice(hashIndex + 1) : '');
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (!accessToken || !refreshToken) return 'Google sign-in failed';
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        return sessionError?.message ?? null;
+      },
+      signOut: async () => {
+        await supabase.auth.signOut();
+      },
+    }),
+    [session, profile, isLoading]
+  );
+
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+}
