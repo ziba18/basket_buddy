@@ -119,7 +119,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   inviteCode: {
-    fontSize: 28,
+    fontSize: 32,
+    lineHeight: 40,
     fontWeight: '700',
     letterSpacing: 4,
   },
