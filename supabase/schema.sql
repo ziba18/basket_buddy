@@ -25,7 +25,8 @@ create policy "users can insert their own profile"
 create policy "users can update their own profile"
   on profiles for update
   to authenticated
-  using (id = auth.uid());
+  using (id = auth.uid())
+  with check (id = auth.uid());
 
 -- Auto-create a profile row whenever a user signs up. Email/password sign-up
 -- passes an explicit `nickname`; Google sign-in doesn't, so fall back to the
@@ -104,23 +105,82 @@ create policy "members can read their home's membership list"
   to authenticated
   using (is_home_member(home_id));
 
-create policy "users can add themselves to a home"
-  on home_members for insert
-  to authenticated
-  with check (user_id = auth.uid());
+-- No direct-insert policy: the only ways to become a member are the
+-- create_home() and join_home_by_invite_code() functions below, both
+-- security definer (they bypass RLS for their own inserts). A client-facing
+-- insert policy here — even one scoped to `user_id = auth.uid()` — would let
+-- anyone who learns a home_id by any means self-join without ever proving
+-- they know the invite code.
 
 create policy "users can remove themselves from a home"
   on home_members for delete
   to authenticated
   using (user_id = auth.uid());
 
--- Any signed-in user can read home rows, so joining via invite code can
--- resolve the code -> home_id (and show the home name) before membership
--- exists. Rows in home_members and shopping_items stay member-only.
-create policy "authenticated users can read homes"
+-- Members only — a home's name and invite_code must NOT be readable by
+-- non-members, or the invite code stops being a secret. Looking a home up
+-- by invite code (to join it) goes through join_home_by_invite_code()
+-- below instead of a direct select.
+create policy "members can read their home"
   on homes for select
   to authenticated
-  using (true);
+  using (is_home_member(id));
+
+-- Creates a home and adds the caller as its first member in one atomic,
+-- security-definer step. Needed because a plain client-side
+-- insert-then-select on `homes` would fail its own RETURNING clause now
+-- that `homes` is members-only: the creator isn't a member yet at the
+-- moment the home row is inserted.
+create or replace function create_home(home_name text, code text)
+returns homes
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  new_home homes;
+begin
+  insert into homes (name, invite_code, created_by)
+  values (home_name, code, auth.uid())
+  returning * into new_home;
+
+  insert into home_members (home_id, user_id)
+  values (new_home.id, auth.uid());
+
+  return new_home;
+end;
+$$;
+
+grant execute on function create_home(text, text) to authenticated;
+
+-- Looks a home up by invite code and joins the caller to it, atomically
+-- and server-side. This is the ONLY way to resolve an invite code to a
+-- home — there is no client-readable path from code to home_id for
+-- someone who isn't already a member, which is the point.
+create or replace function join_home_by_invite_code(code text)
+returns homes
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  target_home homes;
+begin
+  select * into target_home
+  from homes
+  where invite_code = upper(trim(code));
+
+  if not found then
+    raise exception 'That code doesn''t match any home';
+  end if;
+
+  insert into home_members (home_id, user_id)
+  values (target_home.id, auth.uid())
+  on conflict do nothing;
+
+  return target_home;
+end;
+$$;
+
+grant execute on function join_home_by_invite_code(text) to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- shopping_items: the shared, intertwined list per home
@@ -148,15 +208,34 @@ create policy "members can read their home's items"
   to authenticated
   using (is_home_member(home_id));
 
+-- with check pins added_by to the caller — without it, any member could
+-- insert an item and attribute it to a different member.
 create policy "members can add items to their home"
   on shopping_items for insert
   to authenticated
-  with check (is_home_member(home_id));
+  with check (
+    is_home_member(home_id)
+    and (added_by is null or added_by = auth.uid())
+  );
 
+-- with check keeps purchased_by (if set) restricted to an actual member of
+-- THAT home — still lets you log a purchase on behalf of a housemate who
+-- paid, but not attribute it to an arbitrary user in the whole database.
 create policy "members can update items in their home"
   on shopping_items for update
   to authenticated
-  using (is_home_member(home_id));
+  using (is_home_member(home_id))
+  with check (
+    is_home_member(home_id)
+    and (
+      purchased_by is null
+      or exists (
+        select 1 from home_members
+        where home_id = shopping_items.home_id
+          and user_id = purchased_by
+      )
+    )
+  );
 
 create policy "members can delete items in their home"
   on shopping_items for delete

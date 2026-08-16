@@ -122,17 +122,11 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       if (!trimmed) return 'Give your home a name';
 
       const inviteCode = generateInviteCode();
-      const { data, error } = await supabase
-        .from('homes')
-        .insert({ name: trimmed, invite_code: inviteCode, created_by: userId })
-        .select('id, name, invite_code')
-        .single();
+      const { data, error } = await supabase.rpc('create_home', {
+        home_name: trimmed,
+        code: inviteCode,
+      });
       if (error || !data) return error?.message ?? 'Could not create home';
-
-      const { error: memberError } = await supabase
-        .from('home_members')
-        .insert({ home_id: data.id, user_id: userId });
-      if (memberError) return memberError.message;
 
       setHome({ id: data.id, name: data.name, inviteCode: data.invite_code });
       setMembers(await fetchMembers(data.id));
@@ -147,21 +141,12 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       const trimmed = inviteCode.trim().toUpperCase();
       if (!trimmed) return 'Enter an invite code';
 
-      const { data: homeRow, error: lookupError } = await supabase
-        .from('homes')
-        .select('id, name, invite_code')
-        .eq('invite_code', trimmed)
-        .maybeSingle();
-      if (lookupError) return lookupError.message;
-      if (!homeRow) return "That code doesn't match any home";
+      const { data, error } = await supabase.rpc('join_home_by_invite_code', { code: trimmed });
+      if (error) return error.message;
+      if (!data) return "That code doesn't match any home";
 
-      const { error: memberError } = await supabase
-        .from('home_members')
-        .insert({ home_id: homeRow.id, user_id: userId });
-      if (memberError) return memberError.message;
-
-      setHome({ id: homeRow.id, name: homeRow.name, inviteCode: homeRow.invite_code });
-      setMembers(await fetchMembers(homeRow.id));
+      setHome({ id: data.id, name: data.name, inviteCode: data.invite_code });
+      setMembers(await fetchMembers(data.id));
       return null;
     },
     [userId]

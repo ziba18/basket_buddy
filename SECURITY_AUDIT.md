@@ -8,7 +8,7 @@ Supabase, so Postgres Row Level Security is the *only* authorization boundary. S
 a typical checklist (CORS, webhook signatures, API-route auth, file uploads) are marked N/A below
 because the app has no such surface, not because they were skipped.
 
-## Rating: 🔴 Critical
+## Rating: 🔴 Critical *(as found — see remediation status below)*
 
 One live access-control bypass; everything else — secrets handling, SQL-injection surface, XSS
 surface, `auth.uid()`-based identity — is unusually clean. The "Home" privacy model has a real
@@ -17,11 +17,32 @@ database and join any Home without ever being invited, gaining full read/write a
 household's shopping list and purchase history. Fixable in about 20 minutes; the only item here
 that should block real users from relying on the app for private household data.
 
+## Remediation status: ✅ Applied and verified — 2026-08-16
+
+The Critical, High, and Medium findings below, plus the unused-dependency Low finding, have all
+been fixed — both in `supabase/schema.sql` and live on the linked Supabase project — and verified
+with real HTTP calls against the live project using disposable test accounts (all cleaned up
+afterward). The remaining npm-audit Low finding is intentionally deferred (see that finding).
+
+While verifying the Critical fix, testing surfaced a second gap the original writeup didn't cover:
+closing the `homes` read leak alone wasn't sufficient, because the `home_members` INSERT policy
+(`with check (user_id = auth.uid())`) never checked invite-code possession either — anyone who
+learned a `home_id` through *any* channel could still self-join directly, bypassing
+`join_home_by_invite_code()` entirely. Confirmed by testing: a raw insert into `home_members` with
+a known `home_id` succeeded (`201`) even after the `homes` table was locked down. Fix: the
+direct-insert policy on `home_members` was dropped entirely — `create_home()` and
+`join_home_by_invite_code()` are both `security definer` and bypass RLS for their own inserts, so
+they remain the only two ways to become a member. Re-tested afterward: the same direct-insert
+attempt now correctly fails with a `42501` RLS violation, while joining through the real invite
+code still succeeds.
+
 ---
 
 ## Critical & High findings
 
 ### 🔴 Critical — Any signed-up user can read every Home's invite code and join uninvited
+
+**✅ Fixed and verified 2026-08-16** — see [Remediation status](#remediation-status--applied-and-verified---2026-08-16).
 
 **CWE-284 (Improper Access Control) / CWE-639 (IDOR)** · `supabase/schema.sql:107–123`
 
@@ -96,6 +117,9 @@ Effort: ~20 minutes (schema migration + one hook rewrite).
 
 ### 🟠 High — Home members can forge who added or "bought" any item, to anyone in the database
 
+**✅ Fixed and verified 2026-08-16** — confirmed live: attempting to insert an item with a forged
+`added_by` now fails with a `42501` RLS violation.
+
 **CWE-863 (Incorrect Authorization) / trust-the-client identity** · `supabase/schema.sql:151–159`
 
 **What's wrong:** The INSERT policy on `shopping_items` checks membership but never pins
@@ -150,6 +174,8 @@ Effort: ~10 minutes.
 
 ### 🟡 Medium — `profiles` UPDATE policy has no explicit `WITH CHECK`
 
+**✅ Fixed 2026-08-16.**
+
 **CWE-862 (Missing Authorization) — defense in depth** · `supabase/schema.sql:25–28`
 
 Postgres falls back to reusing the `USING` clause as the check when none is given, so this isn't
@@ -168,6 +194,8 @@ create policy "users can update their own profile"
 Effort: ~2 minutes.
 
 ### 🔵 Low — Unused dependency: `@expo/ui`
+
+**✅ Fixed 2026-08-16** (`npm uninstall @expo/ui`).
 
 **CWE-1104 (Unmaintained Third-Party Component)** · `package.json`
 
@@ -191,20 +219,20 @@ lifts.
 
 ## Quick wins (under 10 minutes each)
 
-1. Add `WITH CHECK` to the `profiles` UPDATE policy — 2 min
-2. Pin `added_by`/`purchased_by` in `shopping_items` policies — 10 min
-3. Remove unused `@expo/ui` dependency — 1 min
+1. ✅ Add `WITH CHECK` to the `profiles` UPDATE policy — 2 min — done
+2. ✅ Pin `added_by`/`purchased_by` in `shopping_items` policies — 10 min — done
+3. ✅ Remove unused `@expo/ui` dependency — 1 min — done
 
 ## Prioritized remediation plan
 
-| # | Fix | Severity | Effort |
-|---|-----|----------|--------|
-| 1 | Move Home joining behind `join_home_by_invite_code()`, lock down `homes` SELECT | Critical | 20 min |
-| 2 | Add identity-pinning `WITH CHECK` to `shopping_items` insert/update | High | 10 min |
-| 3 | Add explicit `WITH CHECK` to `profiles` update policy | Medium | 2 min |
-| 4 | Remove unused `@expo/ui` | Low | 1 min |
-| 5 | Add basic length/range constraints (item name length, non-negative price) | Low | 10 min |
-| 6 | Revisit `npm audit` once the Expo SDK 54 pin lifts | Low | — |
+| # | Fix | Severity | Effort | Status |
+|---|-----|----------|--------|--------|
+| 1 | Move Home joining behind `join_home_by_invite_code()`, lock down `homes` SELECT, drop the now-unnecessary `home_members` direct-insert policy | Critical | 20 min | ✅ Done |
+| 2 | Add identity-pinning `WITH CHECK` to `shopping_items` insert/update | High | 10 min | ✅ Done |
+| 3 | Add explicit `WITH CHECK` to `profiles` update policy | Medium | 2 min | ✅ Done |
+| 4 | Remove unused `@expo/ui` | Low | 1 min | ✅ Done |
+| 5 | Add basic length/range constraints (item name length, non-negative price) | Low | 10 min | Open |
+| 6 | Revisit `npm audit` once the Expo SDK 54 pin lifts | Low | — | Deferred |
 
 ---
 
@@ -232,12 +260,17 @@ lifts.
   "handled."
 - `package-lock.json` is committed, and every dependency traces to a real, well-known package — no
   hallucinated or typosquatted names.
+- *(post-remediation)* Home creation and joining now go through `security definer` RPCs
+  (`create_home`, `join_home_by_invite_code`) rather than raw client-side inserts — the same
+  pattern already used correctly for `is_home_member()`, now applied consistently everywhere it's
+  needed.
 
 ---
 
 ## Checklist summary
 
-Legend: ✅ pass · ❌ fail · ⚠️ partial · — n/a
+Legend: ✅ pass (or fixed) · ❌ fail · ⚠️ partial · — n/a. Verdicts below reflect state
+**after** the 2026-08-16 remediation.
 
 **1 · Environment variables & secrets**
 1.1 ✅ hardcoded secrets · 1.2 ✅ .gitignore coverage · 1.3 ✅ public-prefix leaks ·
@@ -245,10 +278,12 @@ Legend: ✅ pass · ❌ fail · ⚠️ partial · — n/a
 1.6 ✅ startup validation
 
 **2 · Database security**
-2.1 ⚠️ RLS enabled (enabled everywhere, but the `homes` policy is over-permissive — see Critical finding) ·
-2.2 ✅ policies exist · 2.3 ❌ WITH CHECK clauses · 2.4 ✅ identity = auth.uid() ·
+2.1 ✅ RLS enabled (`homes` SELECT now scoped to members only; `home_members` has no client-facing
+insert policy at all) · 2.2 ✅ policies exist · 2.3 ✅ WITH CHECK clauses (fixed on `shopping_items`
+insert/update and `profiles` update) · 2.4 ✅ identity = auth.uid() ·
 2.5 ✅ service_role isolation · 2.6 — storage buckets (feature not used) · 2.7 ✅ SQL injection ·
-2.8 ✅ security definer review
+2.8 ✅ security definer review (now includes `create_home()`/`join_home_by_invite_code()`, added as
+part of the fix — both correctly pin `search_path = public`)
 
 **3 · Authentication & sessions**
 3.1 ⚠️ route protection (client-side routing guards only — real boundary is RLS, audited separately) ·
@@ -258,7 +293,7 @@ Legend: ✅ pass · ❌ fail · ⚠️ partial · — n/a
 
 **4 · Server-side validation**
 4.1 ⚠️ schema validation (DB constraints exist; no length/range validation yet — see remediation #5) ·
-4.2 ❌ identity from session (see High finding) · 4.3 ✅ XSS / sanitization ·
+4.2 ✅ identity from session (fixed — see High finding) · 4.3 ✅ XSS / sanitization ·
 4.4 — HTTP method enforcement (no custom routes) · 4.5 ⚠️ error info leaks (Postgres constraint
 errors surface somewhat technical text to the UI in a few places; not exploitable, just unpolished) ·
 4.6 — webhook signatures (app receives no webhooks)
@@ -267,7 +302,7 @@ errors surface somewhat technical text to the UI in a few places; not exploitabl
 5.1 ⚠️ npm audit (23 findings, all dev-tooling only — see Low finding) ·
 5.2 ✅ no hallucinated packages · 5.3 ✅ lockfile committed ·
 5.4 ⚠️ outdated (a few packages behind, tracked against the deliberate SDK 54 pin) ·
-5.5 ❌ unused dependency (`@expo/ui`)
+5.5 ✅ unused dependency (`@expo/ui` removed)
 
 **6 · Rate limiting** — 6.1/6.2/6.3 — no custom expensive endpoints; auth rate limiting is handled
 at the Supabase platform level, not app code.
