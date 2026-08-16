@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useHome } from '@/hooks/use-home';
 import { readCache, writeCache } from '@/lib/local-cache';
@@ -34,7 +34,24 @@ function fromRow(row: any): ShoppingItem {
   };
 }
 
-export function useShoppingList() {
+interface ShoppingListContextValue {
+  items: ShoppingItem[];
+  isLoaded: boolean;
+  addItem: (name: string, category: CategoryId, unit: string | null, quantity: string | null) => Promise<void>;
+  toggleItem: (id: string) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  clearDone: () => Promise<void>;
+  logPurchase: (id: string, details: PurchaseDetails) => Promise<void>;
+}
+
+const ShoppingListContext = createContext<ShoppingListContextValue | null>(null);
+
+// A provider (not a plain hook) because multiple screens (List, Purchased)
+// read the list at once — React Navigation's tab navigator keeps prior tab
+// screens mounted, so a plain hook would open one realtime channel per
+// mounted screen on the same topic, which Supabase's client rejects with
+// "cannot add postgres_changes callbacks ... after subscribe()".
+export function ShoppingListProvider({ children }: { children: React.ReactNode }) {
   const { home } = useHome();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -143,13 +160,24 @@ export function useShoppingList() {
       .eq('id', id);
   }, []);
 
-  return {
-    items: home ? items : [],
-    isLoaded,
-    addItem,
-    toggleItem,
-    deleteItem,
-    clearDone,
-    logPurchase,
-  };
+  const value = useMemo<ShoppingListContextValue>(
+    () => ({
+      items: home ? items : [],
+      isLoaded,
+      addItem,
+      toggleItem,
+      deleteItem,
+      clearDone,
+      logPurchase,
+    }),
+    [home, items, isLoaded, addItem, toggleItem, deleteItem, clearDone, logPurchase]
+  );
+
+  return createElement(ShoppingListContext.Provider, { value }, children);
+}
+
+export function useShoppingList() {
+  const context = useContext(ShoppingListContext);
+  if (!context) throw new Error('useShoppingList must be used within a ShoppingListProvider');
+  return context;
 }

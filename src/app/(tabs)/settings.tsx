@@ -15,10 +15,14 @@ export default function SettingsScreen() {
 
   if (!home) return null;
 
-  const shareInvite = () => {
-    Share.share({
-      message: `Join our "${home.name}" list on Basket Buddy! Use invite code ${home.inviteCode} when you set up the app.`,
-    });
+  const shareInvite = async () => {
+    try {
+      await Share.share({
+        message: `Join our "${home.name}" list on Basket Buddy! Use invite code ${home.inviteCode} when you set up the app.`,
+      });
+    } catch {
+      // User cancelled or the platform denied the share sheet — nothing to do.
+    }
   };
 
   return (

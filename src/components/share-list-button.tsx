@@ -35,8 +35,12 @@ function buildMessage(homeName: string, items: ShoppingItem[]) {
 export function ShareListButton({ homeName, items }: ShareListButtonProps) {
   const theme = useTheme();
 
-  const share = () => {
-    Share.share({ message: buildMessage(homeName, items) });
+  const share = async () => {
+    try {
+      await Share.share({ message: buildMessage(homeName, items) });
+    } catch {
+      // User cancelled or the platform denied the share sheet — nothing to do.
+    }
   };
 
   return (
