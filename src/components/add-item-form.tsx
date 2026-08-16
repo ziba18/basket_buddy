@@ -22,9 +22,12 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
   const [quantity, setQuantity] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
+  const trimmedName = name.trim();
+  const canSubmit = trimmedName.length > 0;
+
   const suggestions = useMemo(() => (isEditingName ? searchCommonItems(name) : []), [name, isEditingName]);
   const showSuggestions =
-    suggestions.length > 0 && !suggestions.some((item) => item.name.toLowerCase() === name.trim().toLowerCase());
+    suggestions.length > 0 && !suggestions.some((item) => item.name.toLowerCase() === trimmedName.toLowerCase());
 
   const applySuggestion = (item: CommonItem) => {
     setName(item.name);
@@ -34,7 +37,7 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
   };
 
   const submit = () => {
-    if (!name.trim()) return;
+    if (!canSubmit) return;
     onAdd(name, category, unit, quantity);
     setName('');
     setUnit('');
@@ -54,21 +57,21 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
           onFocus={() => setIsEditingName(true)}
           placeholder="Add something to the list..."
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.accent }]}
           returnKeyType="done"
           onSubmitEditing={submit}
         />
         <Pressable
           onPress={submit}
-          disabled={!name.trim()}
+          disabled={!canSubmit}
           style={({ pressed }) => [
             styles.addButton,
-            { backgroundColor: name.trim() ? theme.text : theme.backgroundSelected },
-            pressed && name.trim() && styles.pressed,
+            { backgroundColor: canSubmit ? theme.text : theme.backgroundSelected },
+            pressed && canSubmit && styles.pressed,
           ]}>
           <ThemedText
             type="smallBold"
-            themeColor={name.trim() ? 'background' : 'textSecondary'}>
+            themeColor={canSubmit ? 'background' : 'textSecondary'}>
             Add
           </ThemedText>
         </Pressable>
@@ -116,6 +119,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
   },
   addButton: {
     paddingVertical: Spacing.two,
