@@ -16,6 +16,13 @@
       },
       "node": "25.2.1"
     },
+    "simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "node": "25.2.1"
+    },
     "production": {
       "autoIncrement": true,
       "node": "25.2.1"
