@@ -6,16 +6,19 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "25.2.1"
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false
-      }
+      },
+      "node": "25.2.1"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "25.2.1"
     }
   },
   "submit": {
