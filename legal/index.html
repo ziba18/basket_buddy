@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Basket Buddy — Privacy Policy</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --muted: #5a5a5a;
+      --accent: #208AEF;
+      --border: #e5e5e5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --text: #f2f2f2;
+        --muted: #a8a8a8;
+        --border: #2a2a2a;
+      }
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 28px; margin-bottom: 4px; }
+    h2 { font-size: 19px; margin-top: 40px; }
+    p, li { color: var(--text); }
+    .updated { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    a { color: var(--accent); }
+    ul { padding-left: 20px; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 15px; }
+    th { color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Basket Buddy — Privacy Policy</h1>
+  <p class="updated">Last updated: August 17, 2026</p>
+
+  <p>
+    Basket Buddy is a shared shopping-list app for households ("Homes"). This page explains what
+    data the app collects, why, and how you can remove it. If anything here is unclear, contact
+    <a href="mailto:zamaniziba18@gmail.com">zamaniziba18@gmail.com</a>.
+  </p>
+
+  <h2>What we collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th></tr>
+    <tr><td>Email address</td><td>Account sign-in (email/password, Google, or Apple)</td></tr>
+    <tr><td>Password</td><td>Only if you sign up with email/password — stored as a salted hash, never in plain text, by our auth provider (Supabase Auth)</td></tr>
+    <tr><td>Name / nickname</td><td>Shown to other members of your Home so you're identifiable in a shared list</td></tr>
+    <tr><td>Shopping list items</td><td>The core feature — items, categories, quantities you add</td></tr>
+    <tr><td>Purchase history</td><td>Optional — who bought an item, price, store, and date, if you choose to log it</td></tr>
+    <tr><td>Home membership</td><td>Which household(s) you belong to, so the right people see the right list</td></tr>
+  </table>
+
+  <p>We do not collect location data, contacts, photos, or device identifiers, and the app has no
+  advertising or analytics tracking SDKs.</p>
+
+  <h2>Sign-in with Google or Apple</h2>
+  <p>
+    If you sign in with Google or Apple, we receive your email address and name from that
+    provider to create your account — we never see your Google or Apple password.
+  </p>
+
+  <h2>Who can see your data</h2>
+  <p>
+    Your nickname, added items, and purchase logs are visible to other members of the same Home
+    (that's the point of a shared list) — never to members of a different Home, and never
+    publicly. Your email address is not shared with other members.
+  </p>
+
+  <h2>Where data is stored</h2>
+  <p>
+    Data is stored with <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>,
+    our database and authentication provider, which processes it on our behalf under its own
+    security and privacy commitments. We don't sell or share your data with any other third
+    party.
+  </p>
+
+  <h2>Deleting your data</h2>
+  <p>
+    You can permanently delete your account at any time from <strong>Settings → Delete
+    account</strong> inside the app. This immediately and irreversibly removes your profile,
+    email, and login credentials. Items you added or purchases you logged stay visible to your
+    former housemates (with your name removed) so the household's shared list and history stay
+    intact — the same way removing a roommate from a shared spreadsheet wouldn't blank out the
+    rows they'd already filled in.
+  </p>
+  <p>
+    You can also leave a Home at any time from Settings without deleting your account.
+  </p>
+
+  <h2>Children's privacy</h2>
+  <p>Basket Buddy is not directed at children under 13, and we don't knowingly collect data from them.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes, the "Last updated" date above will change accordingly.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy or your data: <a href="mailto:zamaniziba18@gmail.com">zamaniziba18@gmail.com</a></p>
+</body>
+</html>

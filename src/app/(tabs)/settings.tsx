@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,8 +11,9 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function SettingsScreen() {
   const theme = useTheme();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, deleteAccount } = useAuth();
   const { home, members, leaveHome } = useHome();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!home) return null;
 
@@ -23,6 +25,26 @@ export default function SettingsScreen() {
     } catch {
       // User cancelled or the platform denied the share sheet — nothing to do.
     }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This permanently deletes your account and profile. Your Home and its shopping list stay intact for other members. This can\'t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const message = await deleteAccount();
+            setIsDeleting(false);
+            if (message) Alert.alert('Could not delete account', message);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -82,6 +104,12 @@ export default function SettingsScreen() {
           <Pressable onPress={signOut} style={styles.textAction}>
             <ThemedText type="small" themeColor="textSecondary">
               Sign out
+            </ThemedText>
+          </Pressable>
+
+          <Pressable onPress={confirmDeleteAccount} disabled={isDeleting} style={styles.textAction}>
+            <ThemedText type="small" style={styles.destructive}>
+              {isDeleting ? 'Deleting account…' : 'Delete account'}
             </ThemedText>
           </Pressable>
         </ScrollView>

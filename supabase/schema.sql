@@ -64,7 +64,10 @@ create table if not exists homes (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   invite_code text not null unique,
-  created_by uuid not null references profiles (id),
+  -- Nullable + set null (not cascade): a Home and its shopping history
+  -- belong to the household, not to whichever member happened to create it,
+  -- so deleting that member's account shouldn't take the Home down with it.
+  created_by uuid references profiles (id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -193,9 +196,11 @@ create table if not exists shopping_items (
   unit text,
   quantity text,
   done boolean not null default false,
-  added_by uuid references profiles (id),
+  -- set null (not cascade): a deleted member's added/purchased items stay
+  -- in the household's history, just anonymized, rather than vanishing.
+  added_by uuid references profiles (id) on delete set null,
   created_at timestamptz not null default now(),
-  purchased_by uuid references profiles (id),
+  purchased_by uuid references profiles (id) on delete set null,
   purchased_price numeric,
   purchased_at timestamptz,
   purchased_location text
@@ -252,3 +257,24 @@ alter table shopping_items replica identity full;
 -- Realtime: broadcast row changes so every member's list stays in sync.
 alter publication supabase_realtime add table shopping_items;
 alter publication supabase_realtime add table home_members;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- account deletion
+-- ─────────────────────────────────────────────────────────────────────────
+-- Lets a signed-in user permanently delete their own account in-app (Apple
+-- App Store Guideline 5.1.1(v) requires this, not just a "deactivate"
+-- option). Deleting from auth.users cascades to profiles, which cascades to
+-- home_members; homes.created_by and shopping_items.added_by/purchased_by
+-- are set null instead of cascading (see their column comments above) so a
+-- Home's shared history survives one member leaving.
+create or replace function delete_account()
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+grant execute on function delete_account() to authenticated;

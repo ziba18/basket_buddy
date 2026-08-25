@@ -1,25 +1,37 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function WelcomeScreen() {
   const theme = useTheme();
-  const { signInWithGoogle } = useAuth();
+  const colorScheme = useColorScheme();
+  const { signInWithGoogle, signInWithApple } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const continueWithGoogle = async () => {
     setIsGoogleLoading(true);
     setError(null);
     const message = await signInWithGoogle();
     setIsGoogleLoading(false);
+    if (message) setError(message);
+  };
+
+  const continueWithApple = async () => {
+    setIsAppleLoading(true);
+    setError(null);
+    const message = await signInWithApple();
+    setIsAppleLoading(false);
     if (message) setError(message);
   };
 
@@ -41,6 +53,20 @@ export default function WelcomeScreen() {
             <ThemedText type="small" style={styles.error}>
               {error}
             </ThemedText>
+          ) : null}
+
+          {Platform.OS === 'ios' ? (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={
+                colorScheme === 'dark'
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
+              cornerRadius={Spacing.three}
+              style={styles.appleButton}
+              onPress={isAppleLoading ? () => {} : continueWithApple}
+            />
           ) : null}
 
           <Pressable
@@ -119,6 +145,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
+  },
+  appleButton: {
+    height: 52,
   },
   pressed: {
     opacity: 0.85,

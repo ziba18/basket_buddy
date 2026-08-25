@@ -1,5 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -18,7 +20,9 @@ interface AuthContextValue {
   signUp: (email: string, password: string, nickname: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
+  signInWithApple: () => Promise<string | null>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -124,8 +128,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         return sessionError?.message ?? null;
       },
+      signInWithApple: async () => {
+        const rawNonce = Crypto.randomUUID();
+        const hashedNonce = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          rawNonce
+        );
+
+        let credential;
+        try {
+          credential = await AppleAuthentication.signInAsync({
+            requestedScopes: [
+              AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+              AppleAuthentication.AppleAuthenticationScope.EMAIL,
+            ],
+            nonce: hashedNonce,
+          });
+        } catch (err) {
+          if (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_REQUEST_CANCELED') {
+            return null;
+          }
+          return 'Apple sign-in failed';
+        }
+
+        if (!credential.identityToken) return 'Apple sign-in failed';
+
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+          nonce: rawNonce,
+        });
+
+        const fullName = credential.fullName;
+        const nickname = [fullName?.givenName, fullName?.familyName].filter(Boolean).join(' ');
+        if (!error && nickname) {
+          const { data } = await supabase.auth.getUser();
+          if (data.user) {
+            await supabase.from('profiles').update({ nickname }).eq('id', data.user.id);
+          }
+        }
+
+        return error?.message ?? null;
+      },
       signOut: async () => {
         await supabase.auth.signOut();
+      },
+      deleteAccount: async () => {
+        const { error } = await supabase.rpc('delete_account');
+        if (error) return error.message;
+        await supabase.auth.signOut();
+        return null;
       },
     }),
     [session, profile, isLoading]
