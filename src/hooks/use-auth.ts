@@ -106,69 +106,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return error?.message ?? null;
       },
       signInWithGoogle: async () => {
-        const redirectTo = AuthSession.makeRedirectUri();
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo, skipBrowserRedirect: true },
-        });
-        if (error || !data?.url) return error?.message ?? 'Could not start Google sign-in';
+        try {
+          const redirectTo = AuthSession.makeRedirectUri();
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo, skipBrowserRedirect: true },
+          });
+          if (error || !data?.url) return error?.message ?? 'Could not start Google sign-in';
 
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        if (result.type !== 'success' || !result.url) return null;
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+          if (result.type !== 'success' || !result.url) return null;
 
-        const hashIndex = result.url.indexOf('#');
-        const params = new URLSearchParams(hashIndex >= 0 ? result.url.slice(hashIndex + 1) : '');
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        if (!accessToken || !refreshToken) return 'Google sign-in failed';
+          const hashIndex = result.url.indexOf('#');
+          const params = new URLSearchParams(
+            hashIndex >= 0 ? result.url.slice(hashIndex + 1) : ''
+          );
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          if (!accessToken || !refreshToken) {
+            return params.get('error_description') ?? 'Google sign-in failed';
+          }
 
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        return sessionError?.message ?? null;
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          return sessionError?.message ?? null;
+        } catch (err) {
+          return err instanceof Error ? err.message : 'Google sign-in failed';
+        }
       },
       signInWithApple: async () => {
-        const rawNonce = Crypto.randomUUID();
-        const hashedNonce = await Crypto.digestStringAsync(
-          Crypto.CryptoDigestAlgorithm.SHA256,
-          rawNonce
-        );
-
-        let credential;
         try {
-          credential = await AppleAuthentication.signInAsync({
-            requestedScopes: [
-              AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-              AppleAuthentication.AppleAuthenticationScope.EMAIL,
-            ],
-            nonce: hashedNonce,
+          const rawNonce = Crypto.randomUUID();
+          const hashedNonce = await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.SHA256,
+            rawNonce
+          );
+
+          let credential;
+          try {
+            credential = await AppleAuthentication.signInAsync({
+              requestedScopes: [
+                AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                AppleAuthentication.AppleAuthenticationScope.EMAIL,
+              ],
+              nonce: hashedNonce,
+            });
+          } catch (err) {
+            if (
+              err &&
+              typeof err === 'object' &&
+              'code' in err &&
+              err.code === 'ERR_REQUEST_CANCELED'
+            ) {
+              return null;
+            }
+            throw err;
+          }
+
+          if (!credential.identityToken) return 'Apple sign-in failed';
+
+          const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'apple',
+            token: credential.identityToken,
+            nonce: rawNonce,
           });
+
+          const fullName = credential.fullName;
+          const nickname = [fullName?.givenName, fullName?.familyName].filter(Boolean).join(' ');
+          if (!error && nickname) {
+            const { data } = await supabase.auth.getUser();
+            if (data.user) {
+              await supabase.from('profiles').update({ nickname }).eq('id', data.user.id);
+            }
+          }
+
+          return error?.message ?? null;
         } catch (err) {
-          if (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_REQUEST_CANCELED') {
-            return null;
-          }
-          return 'Apple sign-in failed';
+          return err instanceof Error ? err.message : 'Apple sign-in failed';
         }
-
-        if (!credential.identityToken) return 'Apple sign-in failed';
-
-        const { error } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
-          token: credential.identityToken,
-          nonce: rawNonce,
-        });
-
-        const fullName = credential.fullName;
-        const nickname = [fullName?.givenName, fullName?.familyName].filter(Boolean).join(' ');
-        if (!error && nickname) {
-          const { data } = await supabase.auth.getUser();
-          if (data.user) {
-            await supabase.from('profiles').update({ nickname }).eq('id', data.user.id);
-          }
-        }
-
-        return error?.message ?? null;
       },
       signOut: async () => {
         await supabase.auth.signOut();

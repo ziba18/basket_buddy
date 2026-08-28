@@ -22,17 +22,27 @@ export default function WelcomeScreen() {
   const continueWithGoogle = async () => {
     setIsGoogleLoading(true);
     setError(null);
-    const message = await signInWithGoogle();
-    setIsGoogleLoading(false);
-    if (message) setError(message);
+    try {
+      const message = await signInWithGoogle();
+      if (message) setError(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const continueWithApple = async () => {
     setIsAppleLoading(true);
     setError(null);
-    const message = await signInWithApple();
-    setIsAppleLoading(false);
-    if (message) setError(message);
+    try {
+      const message = await signInWithApple();
+      if (message) setError(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Apple sign-in failed');
+    } finally {
+      setIsAppleLoading(false);
+    }
   };
 
   return (
