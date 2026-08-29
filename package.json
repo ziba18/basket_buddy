@@ -1,7 +1,17 @@
 {
   "name": "basket_buddy",
+  "description": "Shared shopping list app for households, built with Expo and Supabase.",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "license": "UNLICENSED",
+  "author": "Ziba Zamani",
+  "contributors": [
+    "Paul Rudenko"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ziba18/basket_buddy.git"
+  },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.112.3",

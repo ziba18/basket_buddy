@@ -2,7 +2,7 @@
 
 A shared shopping list app for households — roommates, couples, and family. One shared list that updates in real time for everyone in your "Home," with optional purchase tracking (who bought what, price, and where). Built with [Expo](https://expo.dev) (SDK 54, Expo Router) and [Supabase](https://supabase.com) (Postgres + Auth + Realtime).
 
-Published on the App Store as **Groceries Mate** (the name "Basket Buddy" was already taken).
+Published on the App Store as **Groceries Mate** (the name "Basket Buddy" was already taken). Also live on [Google Play](https://play.google.com/store/apps/details?id=com.zibazamani.basketbuddy) as **Basket Buddy**, currently in closed testing ahead of full production release.
 
 ## Get started
 
@@ -27,6 +27,7 @@ Published on the App Store as **Groceries Mate** (the name "Basket Buddy" was al
 - `npm run lint` — ESLint (`expo lint`)
 - `npm run ios` / `npm run android` / `npm run web` — run directly on a platform via a native build
 - `eas build --platform ios --profile production --non-interactive --auto-submit` — production iOS build + submit to TestFlight/App Store Connect (see `eas.json`)
+- `eas submit --platform android --latest` — submit the latest Android build to the Play Console track configured in `eas.json` (currently `internal`)
 
 There is no test suite configured in this repo.
 
@@ -38,3 +39,7 @@ See [`CLAUDE.md`](./CLAUDE.md) for a detailed architecture overview (routing, au
 
 - [Expo documentation](https://docs.expo.dev/)
 - [Expo Router](https://docs.expo.dev/router/introduction)
+
+## License
+
+All rights reserved. This repository is public for viewing purposes only — see [`LICENSE`](./LICENSE).
