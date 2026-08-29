@@ -36,6 +36,10 @@
         "ascApiKeyPath": "./AuthKey_2VSRV4UVQ5.p8",
         "ascApiKeyId": "2VSRV4UVQ5",
         "ascApiKeyIssuerId": "b7b67cd8-49b4-491c-9d61-c79d4bf238c2"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
       }
     }
   }

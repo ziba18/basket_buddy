@@ -17,6 +17,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+google-play-service-account.json
 
 # Metro
 .metro-health-check*
@@ -42,3 +43,4 @@ example
 # generated native folders
 /ios
 /android
+*.reviewer-credentials.txt

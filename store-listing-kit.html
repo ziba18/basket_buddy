@@ -1,0 +1,728 @@
+<title>Store Listing Kit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --paper: #fbfcfe;
+    --paper-raised: #ffffff;
+    --ink: #16233f;
+    --muted: #5b6b85;
+    --line: #dce6f2;
+    --accent: #1c7ce0;
+    --accent-ink: #ffffff;
+    --accent-soft: #eaf4ff;
+    --good: #217a4e;
+    --good-soft: #e6f6ee;
+    --warn: #a15a12;
+    --warn-soft: #fbedde;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0a1220;
+      --paper-raised: #101b2e;
+      --ink: #e7edf9;
+      --muted: #93a3c2;
+      --line: #1f2c44;
+      --accent: #5aa9ff;
+      --accent-ink: #08192e;
+      --accent-soft: #12243c;
+      --good: #4fbe8b;
+      --good-soft: #12291f;
+      --warn: #e3a15c;
+      --warn-soft: #2c2013;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #0a1220;
+    --paper-raised: #101b2e;
+    --ink: #e7edf9;
+    --muted: #93a3c2;
+    --line: #1f2c44;
+    --accent: #5aa9ff;
+    --accent-ink: #08192e;
+    --accent-soft: #12243c;
+    --good: #4fbe8b;
+    --good-soft: #12291f;
+    --warn: #e3a15c;
+    --warn-soft: #2c2013;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  header.hero {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 16px;
+    height: 2px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(32px, 5vw, 44px);
+    line-height: 1.08;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .hero p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 58ch;
+  }
+
+  nav.jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px 0 0;
+  }
+
+  nav.jump a {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    text-decoration: none;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 6px 14px;
+    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  }
+
+  nav.jump a:hover, nav.jump a:focus-visible {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  section.block {
+    margin-top: 56px;
+    scroll-margin-top: 24px;
+  }
+
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    margin: 0;
+  }
+
+  .platform-tag {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .field {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper-raised);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+
+  .field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .field-label {
+    font-weight: 600;
+    font-size: 14.5px;
+  }
+
+  .field-note {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 2px 0 10px;
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 9px;
+    border-radius: 100px;
+    background: var(--good-soft);
+    color: var(--good);
+    white-space: nowrap;
+  }
+
+  .value {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    color: var(--ink);
+    margin: 0;
+    user-select: text;
+  }
+
+  .value.prose {
+    font-family: var(--font-body);
+    font-size: 15.5px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 560px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 14px;
+    background: var(--paper-raised);
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .callout {
+    display: flex;
+    gap: 12px;
+    border: 1px solid var(--warn);
+    background: var(--warn-soft);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 18px 0;
+    font-size: 14.5px;
+  }
+
+  .callout strong { color: var(--warn); }
+
+  .callout-mark {
+    font-family: var(--font-mono);
+    color: var(--warn);
+    flex-shrink: 0;
+  }
+
+  ul.checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  ul.checklist li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14.5px;
+  }
+
+  ul.checklist .box {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--muted);
+    border-radius: 5px;
+    margin-top: 2px;
+  }
+
+  ul.checklist b {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  ul.checklist span.detail {
+    color: var(--muted);
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  a { color: var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <span class="eyebrow">Basket Buddy · v1.0.0 submission</span>
+    <h1>Store Listing Kit</h1>
+    <p>Copy-ready text for App Store Connect and Google Play Console, plus the privacy disclosures both stores require. Character counts are exact — verified programmatically, not eyeballed.</p>
+    <nav class="jump">
+      <a href="#app-store">App Store Connect</a>
+      <a href="#google-play">Google Play Console</a>
+      <a href="#privacy">Privacy &amp; Data Safety</a>
+      <a href="#screenshots">Screenshot Shot List</a>
+      <a href="#open">Still open</a>
+    </nav>
+  </header>
+
+  <section class="block" id="app-store">
+    <div class="block-head">
+      <h2>App Store Connect</h2>
+      <span class="platform-tag">iOS</span>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">App Name</span>
+        <span class="chip">12 / 30</span>
+      </div>
+      <p class="value">Basket Buddy</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Subtitle</span>
+        <span class="chip">26 / 30</span>
+      </div>
+      <p class="value">Shared lists for your home</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Promotional Text</span>
+        <span class="chip">125 / 170</span>
+      </div>
+      <p class="field-note">Can be updated anytime without a new review — good place for timely notes later.</p>
+      <p class="value">One shared shopping list for your household — add items, see what your housemates added, and track who bought what and where.</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Description</span>
+        <span class="chip">1,066 / 4,000</span>
+      </div>
+      <p class="value">Basket Buddy is the shopping list built for people who share a home.
+
+Add items to one shared list that updates instantly for everyone in your household — roommates, partners, family. No more group texts about who's picking up milk, no more duplicate trips to the store.
+
+WHAT IT DOES
+– One shared list, always in sync — add an item and everyone sees it appear in real time
+– Smart autocomplete suggests common items and their usual units as you type
+– Check items off as you shop, then optionally log who bought them, the price, and where
+– A dedicated Purchased tab keeps a running history of what your household has bought
+– Invite housemates with a simple 6-character code
+– Works instantly from cache, then syncs the moment you're back online
+– Sign in with Apple, Google, or email
+– Light and dark mode, matching your device
+
+Basket Buddy doesn't show ads, doesn't sell your data, and only shares your list with the people you invite into your home. Delete your account and your data anytime, right from Settings.
+
+One basket. One household. Always up to date.</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Keywords</span>
+        <span class="chip">95 / 100</span>
+      </div>
+      <p class="field-note">Comma-separated, no spaces — words already in the name/subtitle don't need repeating here.</p>
+      <p class="value">shopping,grocery,list,household,roommate,couple,family,chores,todo,pantry,groceries,home,shared</p>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Primary Category</span></div>
+        <p class="value">Shopping</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Secondary Category</span></div>
+        <p class="value">Lifestyle</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Support URL</span></div>
+        <p class="value">https://legal-theta-umber.vercel.app/support.html</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Privacy Policy URL</span></div>
+        <p class="value">https://legal-theta-umber.vercel.app/</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-head"><span class="field-label">What's New in This Version</span></div>
+      <p class="value">Basket Buddy is here — a shared shopping list for your household, with real-time sync, purchase tracking, and sign-in with Apple, Google, or email.</p>
+    </div>
+
+    <p class="field-note" style="margin-top: 24px;">Age Rating questionnaire, question by question. Apple periodically reworks the exact wording, so treat this as what to expect, not a verbatim transcript — read each question as displayed before answering.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Answer</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Cartoon or Fantasy Violence</td><td>None</td><td>No such content anywhere in the app</td></tr>
+          <tr><td>Realistic Violence</td><td>None</td><td>—</td></tr>
+          <tr><td>Sexual Content or Nudity</td><td>None</td><td>—</td></tr>
+          <tr><td>Profanity or Crude Humor</td><td>None</td><td>—</td></tr>
+          <tr><td>Alcohol, Tobacco, or Drug Use</td><td>None</td><td>—</td></tr>
+          <tr><td>Mature or Suggestive Themes</td><td>None</td><td>—</td></tr>
+          <tr><td>Horror or Fear Themes</td><td>None</td><td>—</td></tr>
+          <tr><td>Medical / Treatment Info</td><td>None</td><td>—</td></tr>
+          <tr><td>Gambling (Simulated)</td><td>None</td><td>—</td></tr>
+          <tr><td>Gambling (Contests)</td><td>None</td><td>—</td></tr>
+          <tr><td>Unrestricted Web Access</td><td>No</td><td>App has no in-app browser or open web view</td></tr>
+          <tr><td>Communication / User-Generated Content between users</td><td style="color: var(--good); font-weight: 600;">No</td><td>Decided 2026-08-25: Home membership requires an invite code from an existing member, so there's no path to interact with a stranger — the report/block/moderation requirements this question is really gating exist to protect users from people they didn't choose. Trade-off accepted: if App Review reads it more strictly, expect a bounce asking for report/block before re-review, not a rejection of the app.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="google-play">
+    <div class="block-head">
+      <h2>Google Play Console</h2>
+      <span class="platform-tag">Android</span>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">App Name</span>
+        <span class="chip">12 / 30</span>
+      </div>
+      <p class="value">Basket Buddy</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Short Description</span>
+        <span class="chip">69 / 80</span>
+      </div>
+      <p class="value">Shared grocery and shopping lists for roommates, couples, and family.</p>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <span class="field-label">Full Description</span>
+        <span class="chip">1,066 / 4,000</span>
+      </div>
+      <p class="field-note">Same copy as the App Store description above — reuse it as-is.</p>
+      <p class="value">Basket Buddy is the shopping list built for people who share a home.
+
+Add items to one shared list that updates instantly for everyone in your household — roommates, partners, family. No more group texts about who's picking up milk, no more duplicate trips to the store.
+
+WHAT IT DOES
+– One shared list, always in sync — add an item and everyone sees it appear in real time
+– Smart autocomplete suggests common items and their usual units as you type
+– Check items off as you shop, then optionally log who bought them, the price, and where
+– A dedicated Purchased tab keeps a running history of what your household has bought
+– Invite housemates with a simple 6-character code
+– Works instantly from cache, then syncs the moment you're back online
+– Sign in with Apple, Google, or email
+– Light and dark mode, matching your device
+
+Basket Buddy doesn't show ads, doesn't sell your data, and only shares your list with the people you invite into your home. Delete your account and your data anytime, right from Settings.
+
+One basket. One household. Always up to date.</p>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Category</span></div>
+        <p class="value">Shopping</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Contact Email</span></div>
+        <p class="value">zamaniziba18@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Website</span></div>
+        <p class="value">https://legal-theta-umber.vercel.app/</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Privacy Policy URL</span></div>
+        <p class="value">https://legal-theta-umber.vercel.app/</p>
+      </div>
+    </div>
+
+    <p class="field-note" style="margin-top: 24px;">IARC content rating questionnaire — same underlying facts as Apple's Age Rating, asked in Google's own categories. Read each as displayed; IARC's exact phrasing shifts over time.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Answer</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Violence</td><td>None</td><td>—</td></tr>
+          <tr><td>Sexuality</td><td>None</td><td>—</td></tr>
+          <tr><td>Language (profanity)</td><td>None</td><td>—</td></tr>
+          <tr><td>Controlled Substances</td><td>None</td><td>—</td></tr>
+          <tr><td>Gambling</td><td>None</td><td>—</td></tr>
+          <tr><td>Shares user location</td><td>No</td><td>App never reads or shares device location</td></tr>
+          <tr><td>Users interact / share content</td><td style="color: var(--warn); font-weight: 600;">Yes</td><td>Home members share list/purchase text with each other, but only inside a private, invite-only group they control — worth stating that scope explicitly wherever the form allows free text</td></tr>
+          <tr><td>Digital purchases</td><td>No</td><td>App is free, no in-app purchases</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="privacy">
+    <div class="block-head">
+      <h2>Privacy &amp; Data Safety</h2>
+      <span class="platform-tag">Apple + Google</span>
+    </div>
+    <p class="value prose" style="margin-bottom: 18px; color: var(--muted);">Drawn directly from what <code>legal/index.html</code> already discloses. Apple's App Privacy and Google's Data Safety forms ask this in slightly different shapes, but the underlying facts are the same — use this table as the source for both.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data type</th>
+            <th>Collected</th>
+            <th>Linked to identity</th>
+            <th>Shared w/ 3rd party</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Email address</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Account creation, sign-in</td>
+          </tr>
+          <tr>
+            <td>Password</td>
+            <td>Only if email/password sign-up</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Authentication (stored hashed by Supabase Auth)</td>
+          </tr>
+          <tr>
+            <td>Name / nickname</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Shown to other members of the same Home</td>
+          </tr>
+          <tr>
+            <td>Shopping list items</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Core app functionality</td>
+          </tr>
+          <tr>
+            <td>Purchase history (price, store, date, buyer)</td>
+            <td>Optional, user-entered</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Optional purchase tracking</td>
+          </tr>
+          <tr>
+            <td>Home membership</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Routes the right list to the right people</td>
+          </tr>
+          <tr>
+            <td>Location, contacts, photos, device identifiers</td>
+            <td>No</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Not collected</td>
+          </tr>
+          <tr>
+            <td>Advertising / analytics identifiers</td>
+            <td>No</td>
+            <td>—</td>
+            <td>—</td>
+            <td>No ad or analytics SDKs in the app</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-col" style="margin-top: 16px;">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Used to track you across apps?</span></div>
+        <p class="value">No</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Account deletion supported?</span></div>
+        <p class="value">Yes — Settings → Delete account, in-app, immediate</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-head"><span class="field-label">Third-party processors</span></div>
+      <p class="value prose">Supabase (database, auth, realtime) processes data on Basket Buddy's behalf under its own security commitments. Both stores generally distinguish this kind of infrastructure processor from a data "sale" or "share" for third-party advertising — but confirm the exact wording each console wants before submitting, since Apple's and Google's forms model this slightly differently.</p>
+    </div>
+
+    <h3 style="font-family: var(--font-display); font-size: 18px; margin: 32px 0 12px;">Apple App Privacy — exact categories to check</h3>
+    <p class="field-note">Apple's form is organized by its own fixed list of ~14 data categories. Only these apply to Basket Buddy — leave every other category (Health, Financial Info, Location, Contacts, Browsing History, Search History, Purchases, Diagnostics, etc.) unchecked.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Data type</th><th>Linked to you</th><th>Used for tracking</th></tr></thead>
+        <tbody>
+          <tr><td>Contact Info</td><td>Email Address</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Contact Info</td><td>Name</td><td>Yes</td><td>No</td></tr>
+          <tr><td>User Content</td><td>Other User Content (list items, purchase logs)</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Identifiers</td><td>User ID</td><td>Yes</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-family: var(--font-display); font-size: 18px; margin: 32px 0 12px;">Google Play Data Safety — exact categories to check</h3>
+    <p class="field-note">Play groups data types under its own headings too. Only these apply — leave Financial Info, Location, Web Browsing, Photos/Videos, App Info & Performance, and Device IDs unchecked.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Data type</th><th>Collected</th><th>Shared</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Personal info</td><td>Email address</td><td>Yes</td><td>No</td><td>Account management, App functionality</td></tr>
+          <tr><td>Personal info</td><td>Name</td><td>Yes</td><td>No</td><td>App functionality</td></tr>
+          <tr><td>Personal info</td><td>User IDs</td><td>Yes</td><td>No</td><td>App functionality</td></tr>
+          <tr><td>App activity</td><td>Other user-generated content</td><td>Yes</td><td>No</td><td>App functionality</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="two-col" style="margin-top: 14px;">
+      <div class="field">
+        <div class="field-head"><span class="field-label">Data encrypted in transit?</span></div>
+        <p class="value">Yes — HTTPS to Supabase</p>
+      </div>
+      <div class="field">
+        <div class="field-head"><span class="field-label">Users can request data deletion?</span></div>
+        <p class="value">Yes — in-app, Settings → Delete account</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="screenshots">
+    <div class="block-head">
+      <h2>Screenshot Shot List</h2>
+      <span class="platform-tag">Both stores</span>
+    </div>
+    <p class="field-note">Six screens tell the whole story. Suggested order and the one line each should sell — use these as overlay captions if you're compositing marketing screenshots, or just as a shot list if submitting plain device captures.</p>
+    <ul class="checklist">
+      <li><span class="box"></span><div><b>1. Welcome screen</b><span class="detail"> — "Sign in with Apple, Google, or email." Establishes the sign-in options up front.</span></div></li>
+      <li><span class="box"></span><div><b>2. Shopping list, mid-use</b><span class="detail"> — "One shared list, always in sync." Show a realistic list with a few categories and at least one item another member added.</span></div></li>
+      <li><span class="box"></span><div><b>3. Add-item autocomplete</b><span class="detail"> — "Smart suggestions as you type." Mid-keystroke on the add-item field with the suggestion list visible.</span></div></li>
+      <li><span class="box"></span><div><b>4. Purchased tab with a logged purchase</b><span class="detail"> — "Track who bought what, and where." Show the purchase-log modal or a completed entry with price/store/date.</span></div></li>
+      <li><span class="box"></span><div><b>5. Settings — invite code</b><span class="detail"> — "Invite your household in one code." The 6-character invite code prominent and legible.</span></div></li>
+      <li><span class="box"></span><div><b>6. Dark mode variant of #2</b><span class="detail"> — "Looks right, day or night." Same shopping-list screen, dark theme — cheap to capture, shows polish.</span></div></li>
+    </ul>
+  </section>
+
+  <section class="block" id="open">
+    <div class="block-head">
+      <h2>Still Open</h2>
+      <span class="platform-tag">Before you submit</span>
+    </div>
+
+    <ul class="checklist">
+      <li>
+        <span class="box"></span>
+        <div><b>Screenshots</b><span class="detail"> — an EAS <code>simulator</code> build profile is now set up (<code>eas build --profile simulator --platform ios</code>), so these don't have to wait on the production build queue. iOS wants 6.9" and 6.5" display sizes at minimum; Android wants phone + optional tablet.</span></div>
+      </li>
+      <li>
+        <span class="box"></span>
+        <div><b>App Store Connect numeric App ID / SKU</b><span class="detail"> — needed to pre-fill <code>eas.json</code>'s submit config; otherwise <code>eas submit</code> will ask for it interactively (fine either way).</span></div>
+      </li>
+      <li>
+        <span class="box"></span>
+        <div><b>Google Play service account key</b><span class="detail"> — needed for <code>eas submit --platform android</code>. Generated from Google Cloud IAM, tied to the Play Console. Worth doing together rather than unattended, since it's a credential-generation step.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Generated for the Basket Buddy v1.0.0 submission. Character counts verified with <code>wc -m</code> against the exact strings above, not estimated.
+  </footer>
+
+</div>
