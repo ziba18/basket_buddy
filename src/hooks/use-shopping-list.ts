@@ -3,7 +3,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import { useHome } from '@/hooks/use-home';
 import { readCache, writeCache } from '@/lib/local-cache';
 import { supabase } from '@/lib/supabase';
-import { CategoryId, PurchaseDetails, ShoppingItem } from '@/types/shopping';
+import { CategoryId, ItemEdits, PurchaseDetails, ShoppingItem } from '@/types/shopping';
 
 const cacheKey = (homeId: string) => `cache:shopping-items:${homeId}`;
 
@@ -29,6 +29,7 @@ function fromRow(row: any): ShoppingItem {
     createdAt: new Date(row.created_at).getTime(),
     purchasedBy: row.purchased_by,
     purchasedPrice: row.purchased_price,
+    purchasedCurrency: row.purchased_currency,
     purchasedAt: row.purchased_at ? new Date(row.purchased_at).getTime() : null,
     purchasedLocation: row.purchased_location,
   };
@@ -38,6 +39,7 @@ interface ShoppingListContextValue {
   items: ShoppingItem[];
   isLoaded: boolean;
   addItem: (name: string, category: CategoryId, unit: string | null, quantity: string | null) => Promise<void>;
+  updateItem: (id: string, edits: ItemEdits) => Promise<void>;
   toggleItem: (id: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   clearDone: () => Promise<void>;
@@ -129,6 +131,20 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     [home]
   );
 
+  const updateItem = useCallback(async (id: string, edits: ItemEdits) => {
+    const trimmed = edits.name.trim();
+    if (!trimmed) return;
+    await supabase
+      .from('shopping_items')
+      .update({
+        name: trimmed,
+        category: edits.category,
+        unit: edits.unit?.trim() || null,
+        quantity: edits.quantity?.trim() || null,
+      })
+      .eq('id', id);
+  }, []);
+
   const toggleItem = useCallback(
     async (id: string) => {
       const item = items.find((entry) => entry.id === id);
@@ -154,6 +170,7 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
         done: true,
         purchased_by: details.purchasedBy,
         purchased_price: details.purchasedPrice,
+        purchased_currency: details.purchasedCurrency,
         purchased_at: details.purchasedAt ? new Date(details.purchasedAt).toISOString() : new Date().toISOString(),
         purchased_location: details.purchasedLocation,
       })
@@ -165,12 +182,13 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
       items: home ? items : [],
       isLoaded,
       addItem,
+      updateItem,
       toggleItem,
       deleteItem,
       clearDone,
       logPurchase,
     }),
-    [home, items, isLoaded, addItem, toggleItem, deleteItem, clearDone, logPurchase]
+    [home, items, isLoaded, addItem, updateItem, toggleItem, deleteItem, clearDone, logPurchase]
   );
 
   return createElement(ShoppingListContext.Provider, { value }, children);

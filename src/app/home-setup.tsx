@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import * as Linking from 'expo-linking';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +13,21 @@ import { useTheme } from '@/hooks/use-theme';
 
 type Mode = 'create' | 'join';
 
+// Pulls an invite code out of a `basketbuddy://join?code=XXXX` deep link —
+// the same shape the Settings QR code encodes — so scanning it lands
+// straight on the join tab with the code filled in.
+function extractInviteCode(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const { hostname, path, queryParams } = Linking.parse(url);
+    if (hostname !== 'join' && path !== 'join') return null;
+    const code = queryParams?.code;
+    return typeof code === 'string' ? code : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function HomeSetupScreen() {
   const theme = useTheme();
   const { signOut } = useAuth();
@@ -21,6 +37,19 @@ export default function HomeSetupScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const incomingUrl = Linking.useURL();
+  useEffect(() => {
+    const code = extractInviteCode(incomingUrl);
+    if (!code) return;
+    // Deferred a tick so the state update happens from a callback rather
+    // than synchronously in the effect body (React Compiler's purity lint
+    // flags the latter as a cascading-render risk).
+    Promise.resolve().then(() => {
+      setMode('join');
+      setInviteCode(code);
+    });
+  }, [incomingUrl]);
 
   const value = mode === 'create' ? name : inviteCode;
   const canSubmit = value.trim().length > 0 && !isSubmitting;

@@ -18,6 +18,7 @@ interface HomeContextValue {
   isLoading: boolean;
   createHome: (name: string) => Promise<string | null>;
   joinHome: (inviteCode: string) => Promise<string | null>;
+  renameHome: (name: string) => Promise<string | null>;
   leaveHome: () => Promise<void>;
 }
 
@@ -33,10 +34,12 @@ function generateInviteCode() {
 }
 
 async function fetchMembers(homeId: string): Promise<HomeMember[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('home_members')
     .select('user_id, joined_at, profiles ( nickname )')
     .eq('home_id', homeId);
+
+  if (error) throw error;
 
   return (data ?? []).map((row: any) => ({
     userId: row.user_id,
@@ -45,18 +48,38 @@ async function fetchMembers(homeId: string): Promise<HomeMember[]> {
   }));
 }
 
+// Throws on a failed request instead of treating it like "no Home" — the
+// caller relies on that distinction to avoid wiping out a Home it already
+// has cached just because one fetch got a transient/auth error (e.g. the
+// access token was still stale right after the app resumed from being
+// backgrounded for a long time; see the AppState wiring in lib/supabase.ts).
 async function fetchHome(userId: string): Promise<{ home: Home; members: HomeMember[] } | null> {
-  const { data: membership } = await supabase
+  const { data: membership, error } = await supabase
     .from('home_members')
     .select('home_id, homes ( id, name, invite_code )')
     .eq('user_id', userId)
     .maybeSingle();
+
+  if (error) throw error;
 
   const homeRow: any = membership?.homes;
   if (!homeRow) return null;
 
   const members = await fetchMembers(homeRow.id);
   return { home: { id: homeRow.id, name: homeRow.name, inviteCode: homeRow.invite_code }, members };
+}
+
+// One retry with a short backoff so a fetch that fails right as the app
+// resumes (stale token mid-refresh, brief network blip) has a chance to
+// recover on its own instead of leaving the user stuck on whatever the
+// first attempt saw.
+async function fetchHomeWithRetry(userId: string): Promise<{ home: Home; members: HomeMember[] } | null> {
+  try {
+    return await fetchHome(userId);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    return fetchHome(userId);
+  }
 }
 
 export function HomeProvider({ children }: { children: React.ReactNode }) {
@@ -78,14 +101,22 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    fetchHome(userId).then((result) => {
-      if (isCancelled) return;
-      const resolved: CachedHomeState = { home: result?.home ?? null, members: result?.members ?? [] };
-      setHome(resolved.home);
-      setMembers(resolved.members);
-      setIsLoading(false);
-      writeCache(cacheKey(userId), resolved);
-    });
+    fetchHomeWithRetry(userId)
+      .then((result) => {
+        if (isCancelled) return;
+        const resolved: CachedHomeState = { home: result?.home ?? null, members: result?.members ?? [] };
+        setHome(resolved.home);
+        setMembers(resolved.members);
+        setIsLoading(false);
+        writeCache(cacheKey(userId), resolved);
+      })
+      .catch(() => {
+        // Both attempts failed — keep whatever we already have (cached or
+        // in state) rather than routing a real member to "join or create a
+        // home". Just stop the loading spinner.
+        if (isCancelled) return;
+        setIsLoading(false);
+      });
 
     return () => {
       isCancelled = true;
@@ -152,6 +183,24 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
     [userId]
   );
 
+  const renameHome = useCallback(
+    async (name: string) => {
+      if (!home) return 'No home to rename';
+      const trimmed = name.trim();
+      if (!trimmed) return 'Give your home a name';
+
+      const { data, error } = await supabase.rpc('rename_home', {
+        target_home_id: home.id,
+        new_name: trimmed,
+      });
+      if (error || !data) return error?.message ?? 'Could not rename home';
+
+      setHome({ id: data.id, name: data.name, inviteCode: data.invite_code });
+      return null;
+    },
+    [home]
+  );
+
   const leaveHome = useCallback(async () => {
     if (!userId || !home) return;
     await supabase.from('home_members').delete().eq('home_id', home.id).eq('user_id', userId);
@@ -166,9 +215,10 @@ export function HomeProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       createHome,
       joinHome,
+      renameHome,
       leaveHome,
     }),
-    [userId, home, members, isLoading, createHome, joinHome, leaveHome]
+    [userId, home, members, isLoading, createHome, joinHome, renameHome, leaveHome]
   );
 
   return createElement(HomeContext.Provider, { value }, children);

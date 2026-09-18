@@ -1,5 +1,7 @@
+import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,10 +14,29 @@ import { useTheme } from '@/hooks/use-theme';
 export default function SettingsScreen() {
   const theme = useTheme();
   const { profile, signOut, deleteAccount } = useAuth();
-  const { home, members, leaveHome } = useHome();
+  const { home, members, renameHome, leaveHome } = useHome();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(home?.name ?? '');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [showQrCode, setShowQrCode] = useState(false);
 
   if (!home) return null;
+
+  const startEditingName = () => {
+    setNameDraft(home.name);
+    setRenameError(null);
+    setIsEditingName(true);
+  };
+
+  const saveName = async () => {
+    const message = await renameHome(nameDraft);
+    if (message) {
+      setRenameError(message);
+      return;
+    }
+    setIsEditingName(false);
+  };
 
   const shareInvite = async () => {
     try {
@@ -26,6 +47,8 @@ export default function SettingsScreen() {
       // User cancelled or the platform denied the share sheet — nothing to do.
     }
   };
+
+  const joinUrl = Linking.createURL('join', { queryParams: { code: home.inviteCode } });
 
   const confirmDeleteAccount = () => {
     Alert.alert(
@@ -52,9 +75,38 @@ export default function SettingsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedView style={styles.header}>
-            <ThemedText type="title" style={styles.title}>
-              {home.name}
-            </ThemedText>
+            {isEditingName ? (
+              <View style={styles.editNameRow}>
+                <TextInput
+                  value={nameDraft}
+                  onChangeText={setNameDraft}
+                  autoFocus
+                  style={[styles.editNameInput, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                />
+                <Pressable onPress={saveName} hitSlop={8} style={styles.editNameAction}>
+                  <ThemedText type="smallBold">Save</ThemedText>
+                </Pressable>
+                <Pressable onPress={() => setIsEditingName(false)} hitSlop={8} style={styles.editNameAction}>
+                  <ThemedText type="smallBold" themeColor="textSecondary">
+                    Cancel
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable onPress={startEditingName} style={styles.titleRow} hitSlop={8}>
+                <ThemedText type="title" style={styles.title}>
+                  {home.name}
+                </ThemedText>
+                <ThemedText themeColor="textSecondary" style={styles.editGlyph}>
+                  ✎
+                </ThemedText>
+              </Pressable>
+            )}
+            {renameError ? (
+              <ThemedText type="small" style={styles.errorText}>
+                {renameError}
+              </ThemedText>
+            ) : null}
             <ThemedText themeColor="textSecondary">
               Signed in as {profile?.nickname ?? '…'}
             </ThemedText>
@@ -66,19 +118,44 @@ export default function SettingsScreen() {
             </ThemedText>
             <ThemedText style={styles.inviteCode}>{home.inviteCode}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Share this code so a roommate can join your Home and see the same list.
+              Share this code — or a QR code — so a roommate can join your Home and see the same
+              list.
             </ThemedText>
-            <Pressable
-              onPress={shareInvite}
-              style={({ pressed }) => [
-                styles.shareButton,
-                { backgroundColor: theme.text },
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText type="smallBold" themeColor="background">
-                Share invite
-              </ThemedText>
-            </Pressable>
+            <View style={styles.inviteActions}>
+              <Pressable
+                onPress={shareInvite}
+                style={({ pressed }) => [
+                  styles.shareButton,
+                  styles.flex1,
+                  { backgroundColor: theme.text },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText type="smallBold" themeColor="background">
+                  Share invite
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowQrCode((prev) => !prev)}
+                style={({ pressed }) => [
+                  styles.shareButton,
+                  styles.flex1,
+                  { backgroundColor: theme.backgroundSelected },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText type="smallBold">{showQrCode ? 'Hide QR code' : 'Show QR code'}</ThemedText>
+              </Pressable>
+            </View>
+            {showQrCode ? (
+              <View style={styles.qrWrapper}>
+                <View style={styles.qrCard}>
+                  <QRCode value={joinUrl} size={180} backgroundColor="#ffffff" color="#000000" />
+                </View>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.qrCaption}>
+                  Scanning this opens Basket Buddy straight to the join screen with the invite code
+                  filled in.
+                </ThemedText>
+              </View>
+            ) : null}
           </ThemedView>
 
           <ThemedView style={styles.card}>
@@ -137,9 +214,37 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     gap: Spacing.half,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    alignSelf: 'flex-start',
+  },
   title: {
     fontSize: 32,
     lineHeight: 38,
+  },
+  editGlyph: {
+    fontSize: 16,
+  },
+  editNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  editNameInput: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
+  },
+  editNameAction: {
+    paddingVertical: Spacing.two,
+  },
+  errorText: {
+    color: '#E53935',
   },
   card: {
     borderRadius: Spacing.three,
@@ -152,8 +257,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 4,
   },
-  shareButton: {
+  inviteActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
     marginTop: Spacing.one,
+  },
+  flex1: {
+    flex: 1,
+  },
+  qrWrapper: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  qrCard: {
+    padding: Spacing.three,
+    borderRadius: Spacing.two,
+    backgroundColor: '#ffffff',
+  },
+  qrCaption: {
+    textAlign: 'center',
+  },
+  shareButton: {
     paddingVertical: Spacing.two,
     borderRadius: Spacing.two,
     alignItems: 'center',

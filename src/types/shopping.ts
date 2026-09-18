@@ -12,6 +12,7 @@ export interface ShoppingItem {
   createdAt: number;
   purchasedBy: string | null;
   purchasedPrice: number | null;
+  purchasedCurrency: string | null;
   purchasedAt: number | null;
   purchasedLocation: string | null;
 }
@@ -19,8 +20,16 @@ export interface ShoppingItem {
 export interface PurchaseDetails {
   purchasedBy: string | null;
   purchasedPrice: number | null;
+  purchasedCurrency: string | null;
   purchasedAt: number | null;
   purchasedLocation: string | null;
+}
+
+export interface ItemEdits {
+  name: string;
+  category: CategoryId;
+  unit: string | null;
+  quantity: string | null;
 }
 
 export interface Profile {

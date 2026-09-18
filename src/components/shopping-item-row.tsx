@@ -11,9 +11,10 @@ interface ShoppingItemRowProps {
   addedByNickname?: string;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (item: ShoppingItem) => void;
 }
 
-export function ShoppingItemRow({ item, addedByNickname, onToggle, onDelete }: ShoppingItemRowProps) {
+export function ShoppingItemRow({ item, addedByNickname, onToggle, onDelete, onEdit }: ShoppingItemRowProps) {
   const theme = useTheme();
   const category = CATEGORY_BY_ID[item.category];
   const metric = [item.quantity, item.unit].filter(Boolean).join(' ');
@@ -56,6 +57,12 @@ export function ShoppingItemRow({ item, addedByNickname, onToggle, onDelete }: S
             </ThemedText>
           ) : null}
         </View>
+      </Pressable>
+
+      <Pressable onPress={() => onEdit(item)} hitSlop={8} style={styles.editButton}>
+        <ThemedText themeColor="textSecondary" style={styles.editGlyph}>
+          ✎
+        </ThemedText>
       </Pressable>
 
       <Pressable onPress={() => onDelete(item.id)} hitSlop={8} style={styles.deleteButton}>
@@ -113,6 +120,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  editButton: {
+    padding: Spacing.one,
+  },
+  editGlyph: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   deleteButton: {
     padding: Spacing.one,

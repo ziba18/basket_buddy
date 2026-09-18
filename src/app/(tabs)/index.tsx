@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddItemForm } from '@/components/add-item-form';
+import { EditItemModal } from '@/components/edit-item-modal';
 import { ShareListButton } from '@/components/share-list-button';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
 import { ThemedText } from '@/components/themed-text';
@@ -14,7 +15,8 @@ import { ShoppingItem } from '@/types/shopping';
 
 export default function ListScreen() {
   const { home, members } = useHome();
-  const { items, addItem, toggleItem, deleteItem, clearDone } = useShoppingList();
+  const { items, addItem, updateItem, toggleItem, deleteItem, clearDone } = useShoppingList();
+  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
 
   const nicknameByUserId = useMemo(
     () => new Map(members.map((member) => [member.userId, member.nickname])),
@@ -61,6 +63,7 @@ export default function ListScreen() {
                 addedByNickname={item.addedBy ? nicknameByUserId.get(item.addedBy) : undefined}
                 onToggle={toggleItem}
                 onDelete={deleteItem}
+                onEdit={setEditingItem}
               />
             )}
             ListEmptyComponent={
@@ -82,6 +85,13 @@ export default function ListScreen() {
           />
         </SafeAreaView>
       </KeyboardAvoidingView>
+
+      <EditItemModal
+        key={editingItem?.id ?? 'none'}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={updateItem}
+      />
     </ThemedView>
   );
 }

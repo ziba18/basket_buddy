@@ -8,6 +8,7 @@ import { CATEGORIES } from '@/constants/categories';
 import { CommonItem, searchCommonItems } from '@/constants/common-items';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { guessCategory } from '@/lib/smart-categorize';
 import { CategoryId } from '@/types/shopping';
 
 interface AddItemFormProps {
@@ -21,6 +22,10 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
   const [unit, setUnit] = useState('');
   const [quantity, setQuantity] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
+  // Tracks whether the current category came from the user tapping a chip
+  // (or a suggestion) rather than the auto-guesser, so typing further
+  // characters doesn't fight a category the user picked on purpose.
+  const [isCategoryManual, setIsCategoryManual] = useState(false);
 
   const trimmedName = name.trim();
   const canSubmit = trimmedName.length > 0;
@@ -28,6 +33,20 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
   const suggestions = useMemo(() => (isEditingName ? searchCommonItems(name) : []), [name, isEditingName]);
   const showSuggestions =
     suggestions.length > 0 && !suggestions.some((item) => item.name.toLowerCase() === trimmedName.toLowerCase());
+
+  const handleNameChange = (text: string) => {
+    setName(text);
+    setIsEditingName(true);
+    if (!isCategoryManual) {
+      const guessed = guessCategory(text);
+      if (guessed) setCategory(guessed);
+    }
+  };
+
+  const handleCategorySelect = (id: CategoryId) => {
+    setCategory(id);
+    setIsCategoryManual(true);
+  };
 
   const applySuggestion = (item: CommonItem) => {
     setName(item.name);
@@ -43,6 +62,7 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
     setUnit('');
     setQuantity('');
     setIsEditingName(false);
+    setIsCategoryManual(false);
   };
 
   return (
@@ -50,14 +70,11 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
       <View style={styles.inputRow}>
         <TextInput
           value={name}
-          onChangeText={(text) => {
-            setName(text);
-            setIsEditingName(true);
-          }}
+          onChangeText={handleNameChange}
           onFocus={() => setIsEditingName(true)}
           placeholder="Add something to the list..."
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, backgroundColor: theme.accent }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
           returnKeyType="done"
           onSubmitEditing={submit}
         />
@@ -99,7 +116,7 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
         />
       </View>
 
-      <CategoryPicker categories={CATEGORIES} selectedId={category} onSelect={setCategory} />
+      <CategoryPicker categories={CATEGORIES} selectedId={category} onSelect={handleCategorySelect} />
     </View>
   );
 }

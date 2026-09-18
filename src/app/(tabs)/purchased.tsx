@@ -6,6 +6,7 @@ import { PurchaseLogModal } from '@/components/purchase-log-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CATEGORY_BY_ID } from '@/constants/categories';
+import { currencySymbol } from '@/constants/currencies';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useHome } from '@/hooks/use-home';
 import { useShoppingList } from '@/hooks/use-shopping-list';
@@ -64,7 +65,9 @@ export default function PurchasedScreen() {
             const buyer = item.purchasedBy ? nicknameByUserId.get(item.purchasedBy) : undefined;
             const details = [
               buyer,
-              item.purchasedPrice != null ? `$${item.purchasedPrice.toFixed(2)}` : undefined,
+              item.purchasedPrice != null
+                ? `${currencySymbol(item.purchasedCurrency)}${item.purchasedPrice.toFixed(2)}`
+                : undefined,
               item.purchasedLocation ?? undefined,
               item.purchasedAt ? formatDate(item.purchasedAt) : undefined,
             ].filter(Boolean);

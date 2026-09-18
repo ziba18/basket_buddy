@@ -185,6 +185,36 @@ $$;
 
 grant execute on function join_home_by_invite_code(text) to authenticated;
 
+-- Renames a home. Security-definer + an explicit is_home_member() check
+-- (the same pattern as create_home/join_home_by_invite_code above) rather
+-- than a client-facing UPDATE policy on homes, so the invite_code column
+-- can't be tampered with through the same path.
+create or replace function rename_home(target_home_id uuid, new_name text)
+returns homes
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  updated_home homes;
+begin
+  if not is_home_member(target_home_id) then
+    raise exception 'Not a member of this home';
+  end if;
+
+  if trim(new_name) = '' then
+    raise exception 'Give your home a name';
+  end if;
+
+  update homes set name = trim(new_name)
+  where id = target_home_id
+  returning * into updated_home;
+
+  return updated_home;
+end;
+$$;
+
+grant execute on function rename_home(uuid, text) to authenticated;
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- shopping_items: the shared, intertwined list per home
 -- ─────────────────────────────────────────────────────────────────────────
@@ -202,6 +232,7 @@ create table if not exists shopping_items (
   created_at timestamptz not null default now(),
   purchased_by uuid references profiles (id) on delete set null,
   purchased_price numeric,
+  purchased_currency text,
   purchased_at timestamptz,
   purchased_location text
 );

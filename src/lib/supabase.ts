@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -31,3 +31,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// React Native suspends JS timers while backgrounded, so `autoRefreshToken`
+// alone never fires there — the access token can sit expired for however
+// long the app was away. Without this, the first request after a long
+// absence (e.g. HomeProvider's fetch) races a still-stale token and can
+// fail, which used to read as "you have no Home" (see use-home.ts). This is
+// Supabase's own documented fix: https://supabase.com/docs/reference/javascript/auth-startautorefresh
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
