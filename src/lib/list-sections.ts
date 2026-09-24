@@ -42,6 +42,8 @@ export function buildListSections(
       data: pending.filter((item) => item.category === category.id).sort(byName),
     }));
   } else if (mode === 'addedBy') {
+    const rank = (section: ListSection) =>
+      section.key === `person:${options.myUserId}` ? 0 : section.title.endsWith('former member') ? 2 : 1;
     const groups = new Map<string, ShoppingItem[]>();
     for (const item of pending) {
       const key = item.addedBy ?? 'unknown';
@@ -56,10 +58,8 @@ export function buildListSections(
             : `Added by ${options.nicknameByUserId.get(userId) ?? 'a former member'}`,
         data: groupItems.sort(newestFirst),
       }))
-      // You first, then everyone else alphabetically.
-      .sort((a, b) =>
-        a.key === `person:${options.myUserId}` ? -1 : b.key === `person:${options.myUserId}` ? 1 : a.title.localeCompare(b.title)
-      );
+      // You first, current housemates alphabetically, ex-members last.
+      .sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title));
   } else {
     const groups = new Map<string, ShoppingItem[]>();
     for (const item of [...pending].sort(newestFirst)) {

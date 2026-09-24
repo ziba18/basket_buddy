@@ -1,15 +1,16 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { QrCode } from '@/components/qr-code';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useHome } from '@/hooks/use-home';
 import { useTheme } from '@/hooks/use-theme';
+import { confirmDestructive } from '@/lib/confirm';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -50,25 +51,28 @@ export default function SettingsScreen() {
 
   const joinUrl = Linking.createURL('join', { queryParams: { code: home.inviteCode } });
 
-  const confirmDeleteAccount = () => {
-    Alert.alert(
+  const confirmDeleteAccount = () =>
+    confirmDestructive(
       'Delete account',
       'This permanently deletes your account and profile. Your Home and its shopping list stay intact for other members. This can\'t be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            const message = await deleteAccount();
-            setIsDeleting(false);
-            if (message) Alert.alert('Could not delete account', message);
-          },
-        },
-      ]
+      'Delete',
+      async () => {
+        setIsDeleting(true);
+        const message = await deleteAccount();
+        setIsDeleting(false);
+        if (message) Alert.alert('Could not delete account', message);
+      }
     );
-  };
+
+  // One stray tap used to drop you out of the Home instantly, and getting
+  // back in needs someone to re-share the invite code.
+  const confirmLeaveHome = () =>
+    confirmDestructive(
+      'Leave this Home?',
+      `You'll lose access to ${home.name}'s list and calendar until someone shares the invite code with you again.`,
+      'Leave',
+      leaveHome
+    );
 
   return (
     <ThemedView style={styles.container}>
@@ -148,7 +152,7 @@ export default function SettingsScreen() {
             {showQrCode ? (
               <View style={styles.qrWrapper}>
                 <View style={styles.qrCard}>
-                  <QRCode value={joinUrl} size={180} backgroundColor="#ffffff" color="#000000" />
+                  <QrCode value={joinUrl} size={180} />
                 </View>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.qrCaption}>
                   Scanning this opens Basket Buddy straight to the join screen with the invite code
@@ -172,7 +176,7 @@ export default function SettingsScreen() {
             ))}
           </ThemedView>
 
-          <Pressable onPress={leaveHome} style={styles.textAction}>
+          <Pressable onPress={confirmLeaveHome} style={styles.textAction}>
             <ThemedText type="small" style={styles.destructive}>
               Leave this Home
             </ThemedText>
