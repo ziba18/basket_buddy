@@ -1,44 +1,73 @@
+import { isCategoryId } from '@/constants/categories';
 import { COMMON_ITEMS } from '@/constants/common-items';
 import { CategoryId } from '@/types/shopping';
 
 // Keyword → category fallback for names that aren't an exact match in
 // COMMON_ITEMS (e.g. "chicken thighs" instead of the catalog's "Chicken
-// breast"). Checked in order, so more specific lists (produce, cleaning,
-// household) come before the broad "groceries" catch-all.
+// breast"). Checked in order, so more specific phrases ("ice cream",
+// "peanut butter", "paper towel") are matched before the single words they
+// contain ("cream", "butter", "towel") would send them somewhere else.
 const KEYWORD_CATEGORIES: { category: CategoryId; keywords: string[] }[] = [
-  {
-    category: 'produce',
-    keywords: [
-      'apple', 'banana', 'orange', 'grape', 'berry', 'berries', 'melon',
-      'lettuce', 'spinach', 'kale', 'tomato', 'onion', 'garlic', 'potato',
-      'carrot', 'bell pepper', 'lemon', 'lime', 'avocado', 'cucumber',
-      'broccoli', 'cauliflower', 'mushroom', 'zucchini', 'squash', 'herbs',
-      'cilantro', 'parsley', 'basil', 'fruit', 'vegetable', 'veggies',
-    ],
-  },
-  {
-    category: 'cleaning',
-    keywords: [
-      'soap', 'detergent', 'bleach', 'cleaner', 'sponge', 'scrub',
-      'disinfect', 'trash bag', 'garbage bag', 'mop', 'broom', 'fabric softener',
-    ],
-  },
+  { category: 'frozen', keywords: ['frozen', 'ice cream', 'ice lolly', 'popsicle', 'fish fingers'] },
+  { category: 'pantry', keywords: ['peanut butter', 'coconut milk', 'canned', 'tinned'] },
   {
     category: 'household',
     keywords: [
       'toilet paper', 'paper towel', 'tissue', 'napkin', 'shampoo', 'conditioner',
       'toothpaste', 'toothbrush', 'deodorant', 'razor', 'battery', 'batteries',
-      'light bulb', 'bulb', 'candle', 'foil', 'ziploc', 'air freshener', 'cotton',
+      'light bulb', 'bulb', 'candle', 'foil', 'cling film', 'ziploc', 'cotton',
+      'hand soap', 'body wash', 'nappies', 'diapers', 'wipes',
     ],
   },
   {
-    category: 'groceries',
+    category: 'cleaning',
     keywords: [
-      'milk', 'egg', 'bread', 'cheese', 'yogurt', 'rice', 'pasta', 'cereal',
-      'coffee', 'tea', 'sugar', 'flour', 'oil', 'chicken', 'beef', 'pork',
-      'fish', 'shrimp', 'bacon', 'tofu', 'juice', 'water', 'snack', 'chip',
-      'pizza', 'ice cream', 'soda', 'beer', 'wine', 'sauce', 'soup', 'spice',
-      'salt', 'nut', 'cracker', 'butter', 'cream',
+      'soap', 'detergent', 'bleach', 'cleaner', 'sponge', 'scrub', 'disinfect',
+      'trash bag', 'bin bag', 'garbage bag', 'mop', 'broom', 'fabric softener',
+      'air freshener', 'dishwasher',
+    ],
+  },
+  {
+    category: 'produce',
+    keywords: [
+      'apple', 'banana', 'orange', 'grape', 'berry', 'berries', 'melon', 'mango',
+      'pear', 'peach', 'plum', 'kiwi', 'pineapple', 'lettuce', 'spinach', 'kale',
+      'tomato', 'onion', 'garlic', 'potato', 'carrot', 'pepper', 'lemon', 'lime',
+      'avocado', 'cucumber', 'broccoli', 'cauliflower', 'mushroom', 'zucchini',
+      'courgette', 'eggplant', 'aubergine', 'squash', 'celery', 'ginger', 'herbs', 'cilantro', 'coriander',
+      'parsley', 'basil', 'mint', 'salad', 'fruit', 'vegetable', 'veggies', 'veg',
+    ],
+  },
+  {
+    category: 'bakery',
+    keywords: ['bread', 'bagel', 'croissant', 'bun', 'roll', 'baguette', 'tortilla', 'wrap', 'pitta', 'pita', 'muffin', 'cake', 'pastry', 'sourdough'],
+  },
+  {
+    category: 'meat',
+    keywords: [
+      'chicken', 'beef', 'pork', 'lamb', 'turkey', 'mince', 'steak', 'bacon',
+      'sausage', 'ham', 'salami', 'fish', 'salmon', 'tuna', 'cod', 'shrimp',
+      'prawn', 'meat',
+    ],
+  },
+  {
+    category: 'dairy',
+    keywords: ['milk', 'egg', 'cheese', 'yogurt', 'yoghurt', 'butter', 'cream', 'tofu', 'hummus'],
+  },
+  {
+    category: 'drinks',
+    keywords: ['juice', 'water', 'soda', 'cola', 'coke', 'lemonade', 'beer', 'wine', 'cider', 'prosecco', 'vodka', 'gin', 'whisky', 'drink'],
+  },
+  {
+    category: 'snacks',
+    keywords: ['snack', 'chip', 'crisp', 'chocolate', 'candy', 'sweets', 'cookie', 'biscuit', 'cracker', 'popcorn', 'nuts', 'pretzel'],
+  },
+  {
+    category: 'pantry',
+    keywords: [
+      'rice', 'pasta', 'noodle', 'cereal', 'oats', 'coffee', 'tea', 'sugar',
+      'flour', 'oil', 'vinegar', 'sauce', 'ketchup', 'mayo', 'mustard', 'soup',
+      'spice', 'salt', 'honey', 'jam', 'beans', 'lentil', 'stock', 'can',
     ],
   },
 ];
@@ -58,4 +87,13 @@ export function guessCategory(name: string): CategoryId | null {
   }
 
   return null;
+}
+
+// Rows written before the store-aisle categories existed (the old catch-all
+// "groceries", or anything else unrecognized) are re-guessed from the item
+// name on read, so they land in a real aisle instead of crashing the
+// CATEGORY_BY_ID lookup.
+export function resolveCategory(raw: unknown, name: string): CategoryId {
+  if (isCategoryId(raw)) return raw;
+  return guessCategory(name) ?? 'other';
 }

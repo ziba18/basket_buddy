@@ -2,6 +2,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 
 import { useHome } from '@/hooks/use-home';
 import { readCache, writeCache } from '@/lib/local-cache';
+import { resolveCategory } from '@/lib/smart-categorize';
 import { supabase } from '@/lib/supabase';
 import { CategoryId, ItemEdits, PurchaseDetails, ShoppingItem } from '@/types/shopping';
 
@@ -21,7 +22,7 @@ function fromRow(row: any): ShoppingItem {
     id: row.id,
     homeId: row.home_id,
     name: row.name,
-    category: row.category,
+    category: resolveCategory(row.category, row.name),
     unit: row.unit,
     quantity: row.quantity,
     done: row.done,
@@ -66,7 +67,9 @@ export function ShoppingListProvider({ children }: { children: React.ReactNode }
     // immediately, then reconcile with the server a moment later.
     readCache<ShoppingItem[]>(cacheKey(home.id)).then((cached) => {
       if (isCancelled || !cached) return;
-      setItems(cached);
+      // Caches written by older app versions can still hold retired
+      // category ids (e.g. "groceries").
+      setItems(cached.map((item) => ({ ...item, category: resolveCategory(item.category, item.name) })));
       setIsLoaded(true);
     });
 

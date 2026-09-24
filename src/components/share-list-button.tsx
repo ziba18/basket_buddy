@@ -1,7 +1,7 @@
 import { Pressable, Share, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { CATEGORY_BY_ID } from '@/constants/categories';
+import { CATEGORIES } from '@/constants/categories';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ShoppingItem } from '@/types/shopping';
@@ -15,13 +15,13 @@ function buildMessage(homeName: string, items: ShoppingItem[]) {
   const pending = items.filter((item) => !item.done);
   if (pending.length === 0) return `${homeName} shopping list is all done! 🎉`;
 
-  const byCategory = new Map<string, ShoppingItem[]>();
-  for (const item of pending) {
-    const label = CATEGORY_BY_ID[item.category].label;
-    byCategory.set(label, [...(byCategory.get(label) ?? []), item]);
-  }
+  // Store-aisle order, same as the List tab's default grouping.
+  const byCategory = CATEGORIES.map((category) => [
+    category.label,
+    pending.filter((item) => item.category === category.id),
+  ] as const).filter(([, categoryItems]) => categoryItems.length > 0);
 
-  const sections = Array.from(byCategory.entries()).map(([label, categoryItems]) => {
+  const sections = byCategory.map(([label, categoryItems]) => {
     const lines = categoryItems.map((item) => {
       const metric = [item.quantity, item.unit].filter(Boolean).join(' ');
       return `• ${item.name}${metric ? ` (${metric})` : ''}`;

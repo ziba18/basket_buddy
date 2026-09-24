@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { ActivityBanner } from '@/components/activity-banner';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AppointmentsProvider } from '@/hooks/use-appointments';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { HomeProvider, useHome } from '@/hooks/use-home';
 import { ShoppingListProvider } from '@/hooks/use-shopping-list';
@@ -44,9 +45,11 @@ export default function RootLayout() {
       <AuthProvider>
         <HomeProvider>
           <ShoppingListProvider>
-            <AnimatedSplashOverlay />
-            <RootNavigator />
-            <ActivityBanner />
+            <AppointmentsProvider>
+              <AnimatedSplashOverlay />
+              <RootNavigator />
+              <ActivityBanner />
+            </AppointmentsProvider>
           </ShoppingListProvider>
         </HomeProvider>
       </AuthProvider>

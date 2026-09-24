@@ -1,4 +1,17 @@
-export type CategoryId = 'groceries' | 'produce' | 'cleaning' | 'household' | 'other';
+export type CategoryId =
+  | 'produce'
+  | 'bakery'
+  | 'meat'
+  | 'dairy'
+  | 'pantry'
+  | 'frozen'
+  | 'drinks'
+  | 'snacks'
+  | 'household'
+  | 'cleaning'
+  | 'other';
+
+export type ListSortMode = 'category' | 'addedBy' | 'date';
 
 export interface ShoppingItem {
   id: string;
@@ -47,4 +60,28 @@ export interface HomeMember {
   userId: string;
   nickname: string;
   joinedAt: number;
+}
+
+export type AppointmentKind = 'date' | 'health' | 'reminder' | 'other';
+
+export interface Appointment {
+  id: string;
+  homeId: string;
+  title: string;
+  kind: AppointmentKind;
+  startsAt: number;
+  allDay: boolean;
+  location: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: number;
+}
+
+export interface AppointmentDraft {
+  title: string;
+  kind: AppointmentKind;
+  startsAt: number;
+  allDay: boolean;
+  location: string | null;
+  notes: string | null;
 }

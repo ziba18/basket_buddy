@@ -23,7 +23,7 @@ export function EditItemModal({ item, onClose, onSave }: EditItemModalProps) {
   // component via a `key` on the item id), so it's safe to seed state from
   // it directly instead of syncing with an effect.
   const [name, setName] = useState(item?.name ?? '');
-  const [category, setCategory] = useState<CategoryId>(item?.category ?? 'groceries');
+  const [category, setCategory] = useState<CategoryId>(item?.category ?? 'other');
   const [unit, setUnit] = useState(item?.unit ?? '');
   const [quantity, setQuantity] = useState(item?.quantity ?? '');
   const [isCategoryManual, setIsCategoryManual] = useState(true);

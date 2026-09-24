@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { CategoryMeta } from '@/constants/categories';
@@ -16,7 +16,14 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
   const theme = useTheme();
 
   return (
-    <View style={styles.row}>
+    // Horizontal scroller rather than a wrapping row — there are enough
+    // store-aisle categories that wrapping would eat three lines of the
+    // add-item form.
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.row}>
       {categories.map((category) => {
         const isSelected = category.id === selectedId;
         return (
@@ -40,14 +47,13 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   chip: {

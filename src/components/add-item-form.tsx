@@ -18,7 +18,7 @@ interface AddItemFormProps {
 export function AddItemForm({ onAdd }: AddItemFormProps) {
   const theme = useTheme();
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<CategoryId>('groceries');
+  const [category, setCategory] = useState<CategoryId>('other');
   const [unit, setUnit] = useState('');
   const [quantity, setQuantity] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -61,6 +61,7 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
     setName('');
     setUnit('');
     setQuantity('');
+    setCategory('other');
     setIsEditingName(false);
     setIsCategoryManual(false);
   };

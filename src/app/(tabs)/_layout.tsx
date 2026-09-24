@@ -72,6 +72,15 @@ export default function TabsLayout() {
         listeners={{ focus: markPurchasedSeen }}
       />
       <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, focused }) => (
+            <TabGlyph glyph="📅" color={color} focused={focused} activeBackground={theme.backgroundElement} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Home',
