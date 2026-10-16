@@ -83,7 +83,11 @@ All data, RLS and realtime stay on Supabase unchanged; email/password still talk
   Google provider uses; it's the token audience). iOS = "Basket Buddy iOS"
   `26319592248-u75rpg95amvomqf00e8g2dot96al2q9t.apps.googleusercontent.com`, URL scheme
   `com.googleusercontent.apps.26319592248-u75rpg95amvomqf00e8g2dot96al2q9t`. All three `EXPO_PUBLIC_GOOGLE_*` are set in
-  EAS (production/preview/development) and `.env`. No Android client yet (needs the Play signing SHA-1).
+  EAS (production/preview/development) and `.env`. Android = "Basket Buddy Android (Play signing)"
+  `26319592248-ii3skt18ducek3c9hkohuvjnsbg9v8hh.apps.googleusercontent.com`, package `com.zibazamani.basketbuddy`, SHA-1 of
+  the **Play app signing key** (Play Console → Test and release → App integrity → App signing), created 2026-10-16. Builds
+  installed outside Play (signed with the EAS upload key, SHA-1 `10:45:2B:…:72:55`) would need their own Android client.
+  The Android app needs a new EAS build before Google sign-in works there (the native module isn't in the current one).
 - **Lock file must satisfy npm 10:** the cloud health check (and possibly EAS) runs npm 10, which rejected a lock
   written by npm 11 on the Mac (missing `@emnapi/*`, `typescript@5.9.3`). After dependency changes, regenerate with
   `npx npm@10 install --package-lock-only --ignore-scripts` and check `npx npm@10 ci --dry-run` passes.

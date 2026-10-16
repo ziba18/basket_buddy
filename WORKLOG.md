@@ -2,6 +2,17 @@
 
 Dated log of decisions, what was verified, and why. Newest first.
 
+## 2026-10-16 (evening) — Android Google client; iOS profile regeneration
+
+- **Android OAuth client** "Basket Buddy Android (Play signing)" created in Google Cloud project `basket-buddy-505719`:
+  `26319592248-ii3skt18ducek3c9hkohuvjnsbg9v8hh.apps.googleusercontent.com`, package `com.zibazamani.basketbuddy`, SHA-1 copied
+  from Play Console's App signing key. Also added to the server's accepted audiences (atossa `config.py`). Android
+  Google sign-in still needs a new Android EAS build (the current Play build predates `@react-native-google-signin`).
+- **iOS signing profile:** instead of a new build, ran `npx eas-cli credentials -p ios` in the macOS Terminal (opened
+  by Claude with `osascript`), production → log in to Apple → "Build Credentials: Set up all the required
+  credentials" → regenerate the invalid profile. No build or version was made (the user asked for no new EAS
+  version yet).
+
 ## 2026-10-16 (afternoon) — "Sign Up Not Completed" fixed: Apple capability reset + build 12
 
 - **Symptom:** Apple's own sheet said "Sign Up Not Completed" (same Apple ID works in Atossa; Groceries Mate never
