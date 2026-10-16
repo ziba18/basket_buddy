@@ -13,8 +13,11 @@ Dated log of decisions, what was verified, and why. Newest first.
   `_IOS_CLIENT_ID` and `_IOS_URL_SCHEME` were created in EAS (plaintext, all three environments) and added to `.env`.
 - **`npm ci` failed in the cloud only:** npm 10 there vs npm 11 locally. Regenerated `package-lock.json` with
   `npx npm@10 install --package-lock-only`. `npm ci --dry-run` now passes on both npm 10 and 11.
-- **Still for the user (Render dashboard, `atossa-backend` → Environment):** `BASKET_GOOGLE_WEB_CLIENT_ID` =
-  the Web client ID above, and `BASKET_SUPABASE_SECRET_KEY`. Claude was blocked from editing Render env vars.
+- **Render env vars set by the user** (`atossa-backend` → Environment): `BASKET_GOOGLE_WEB_CLIENT_ID` and
+  `BASKET_SUPABASE_SECRET_KEY`. Claude was blocked from editing Render env vars, so it opened the page for them.
+  After the redeploy, `/basket-buddy/auth/google` with a junk token went from 500 "not configured" to 401, and
+  `/apple` returned 401. Atossa's `/auth/google` still returned 401 and `/warmup` 200. The secret key itself can only be
+  proven by a real sign-in (needs the 1.1.1 build): a wrong key would show up as a 502 with "Could not create the user".
 
 ## 2026-10-16 — Daily 5am cloud health check
 
