@@ -18,6 +18,7 @@ Dated log of decisions, what was verified, and why. Newest first.
 - **Verified:** on TestFlight build 12 the Apple sheet completed and Render logged
   `11:41:30 POST /basket-buddy/auth/apple 200 OK`, i.e. Apple token verified + Supabase session minted
   (so `BASKET_SUPABASE_SECRET_KEY` is right). The 1.1.0 build 11 in App Review predates the reset.
+  **User confirmed on device: signed in successfully with Apple on build 12.**
 
 ## 2026-10-16 (later) — Cloud allowlist, Google OAuth clients, npm 10 lock fix
 

@@ -39,6 +39,8 @@ This is an Expo Router app (SDK 54, npm package `expo@^54.0.36`) — note this c
 
 Package `com.zibazamani.basketbuddy` is live on Google Play: `https://play.google.com/store/apps/details?id=com.zibazamani.basketbuddy`. The Play Console developer account ("Atossa") is owned by a co-founder (`rudenko.paul@gmail.com`), not the primary maintainer's personal Google account — sign in as the account owner to manage listing/release settings.
 
+**TestFlight build 12 (2026-10-16, v1.1.0, EAS `ed7031e3`)** is the first build with Google/Apple sign-in via Render; Apple sign-in confirmed working on device. Build 11 (below) is the one in App Review.
+
 **Latest release (2026-09-24): v1.1.0** — Android versionCode 6 auto-submitted to the Closed Test `alpha` track (`eas.json` submit track is `alpha`, not `internal`); iOS build 11 uploaded to App Store Connect/TestFlight. Build numbers are remote/auto-incremented (`appVersionSource: remote`); only `expo.version` in `app.json` is bumped by hand. Production `eas build` commands are blocked by Claude Code's auto-mode classifier — hand the user the exact `! npx eas-cli build ...` command to run instead. The size cuts (removed native modules) landed after 1.1.0 and need a new build (1.1.1).
 
 - **An Internal-Testing-only app has no real store item page.** Testers hit "item not found" until the app also has a release on Closed Test, Open Test, or Production — check Advanced Settings → App availability first if this happens; it says so explicitly. Fix here: pushed the build to a `Closed Test - Alpha` track (all countries, testers added) and submitted for review.
@@ -87,7 +89,7 @@ All data, RLS and realtime stay on Supabase unchanged; email/password still talk
   stubbed there with a readable error); Apple sign-in does not work in Expo Go either (token audience is Expo Go's
   bundle ID, not ours).
 - The Apple "Sign Up Not Completed" error (ticket `20000150113899`) was fixed 2026-10-16 by resetting the App ID's
-  Sign In with Apple capability (untick/save, re-tick as primary/save); verified on TestFlight build 12. If it ever
+  Sign In with Apple capability (untick/save, re-tick as primary/save); verified on TestFlight build 12 (user signed in successfully on device). If it ever
   returns, do that reset first (see WORKLOG 2026-10-16 afternoon).
 - Supabase's Google/Apple providers in the dashboard are no longer used by the app; leave them until 1.1.0
   (the build in review) is replaced, since that build still signs in through them.
