@@ -39,7 +39,7 @@ Three problems:
 The routine prompt was updated to create that file, to fall back to `npm install` and report lock drift,
 and to run the network steps first.
 
-## 2026-10-16 — Google & Apple sign-in moved to the Render backend (uncommitted)
+## 2026-10-16 — Google & Apple sign-in moved to the Render backend (pushed f697707; backend live)
 
 **What:** Google and Apple sign-in now go through Atossa's Render backend
 (`https://atossa-backend.onrender.com/basket-buddy/auth/{apple,google}`) instead of Supabase's own
