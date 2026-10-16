@@ -21,7 +21,7 @@ This is an Expo Router app (SDK 54, npm package `expo@^54.0.36`) — note this c
 
 - **Routing root**: Expo Router auto-detects `src/app` as the routes directory (no `app/` at repo root). `src/app/_layout.tsx` is the root layout and uses `Stack.Protected` guards to route between three states: signed out (`welcome`/`sign-in`/`sign-up`), signed in with no Home yet (`home-setup`), and signed in with a Home (`(tabs)` group: `index` list / `purchased` / `calendar` / `settings`).
 - **Path aliases** (`tsconfig.json`): `@/*` → `src/*`, `@/assets/*` → `assets/*`.
-- **Auth & Home context**: `src/hooks/use-auth.ts` (`AuthProvider`/`useAuth`) wraps Supabase Auth — email/password (`signUp`/`signIn`), Google OAuth (`signInWithGoogle`, implicit flow via `expo-auth-session` + `expo-web-browser`'s `openAuthSessionAsync`, redirecting through `app.json`'s `scheme`), and Sign In with Apple (`signInWithApple`, native via `expo-apple-authentication` + a `expo-crypto`-hashed nonce, exchanged through `supabase.auth.signInWithIdToken`) — plus the `profiles` row for the nickname. All three sign-in methods wrap their entire body in try/catch and return an error string (or `null`) rather than throwing — `welcome.tsx`'s callers also wrap in try/catch/finally as defense-in-depth so a loading spinner can never get stuck and a failure is always surfaced as visible text, never silent. `src/hooks/use-home.ts` (`HomeProvider`/`useHome`) resolves the signed-in user's `homes`/`home_members` row, exposes `createHome`/`joinHome`/`leaveHome`, and subscribes to realtime membership changes. Both providers wrap the app in `src/app/_layout.tsx`. `createHome`/`joinHome` call the `create_home`/`join_home_by_invite_code` Postgres RPCs (`supabase/schema.sql`) rather than inserting into `homes`/`home_members` directly — `homes` SELECT is members-only and `home_members` has no client-facing insert policy at all, so those two `security definer` functions are the only way to create or join a Home (see `SECURITY_AUDIT.md` for why: the invite code has to actually gate joining, not just be checked client-side).
+- **Auth & Home context**: `src/hooks/use-auth.ts` (`AuthProvider`/`useAuth`) wraps Supabase Auth — email/password (`signUp`/`signIn`) directly against Supabase, plus Google (`signInWithGoogle`) and Sign In with Apple (`signInWithApple`), which since 2026-10-16 go **through the Render backend shared with Atossa** (see "Social sign-in via Render" below) — plus the `profiles` row for the nickname. All three sign-in methods wrap their entire body in try/catch and return an error string (or `null`) rather than throwing — `welcome.tsx`'s callers also wrap in try/catch/finally as defense-in-depth so a loading spinner can never get stuck and a failure is always surfaced as visible text, never silent. `src/hooks/use-home.ts` (`HomeProvider`/`useHome`) resolves the signed-in user's `homes`/`home_members` row, exposes `createHome`/`joinHome`/`leaveHome`, and subscribes to realtime membership changes. Both providers wrap the app in `src/app/_layout.tsx`. `createHome`/`joinHome` call the `create_home`/`join_home_by_invite_code` Postgres RPCs (`supabase/schema.sql`) rather than inserting into `homes`/`home_members` directly — `homes` SELECT is members-only and `home_members` has no client-facing insert policy at all, so those two `security definer` functions are the only way to create or join a Home (see `SECURITY_AUDIT.md` for why: the invite code has to actually gate joining, not just be checked client-side).
 - **State & persistence**: `src/hooks/use-shopping-list.ts` (`ShoppingListProvider`/`useShoppingList`) is the single source of truth for the active Home's `shopping_items` rows — it loads the list from Supabase and subscribes to realtime `postgres_changes` so every member's list stays intertwined, and exposes `addItem`/`toggleItem`/`deleteItem`/`clearDone`/`logPurchase`. Purchase tracking (who/price/when/where — all optional) lives on the same row and is edited via `src/components/purchase-log-modal.tsx` from the Purchased tab. It's a Context provider (mounted once in `_layout.tsx`, alongside `AuthProvider`/`HomeProvider`), not a plain hook each screen calls independently — React Navigation's tab navigator keeps prior tab screens mounted, so a plain hook opened one realtime channel per mounted screen on the same topic and Supabase's client threw `cannot add postgres_changes callbacks ... after subscribe()` when switching tabs. Any new screen that needs the list must consume the existing context, not re-implement its own fetch/subscribe.
 - **Categories are store aisles, in walk order**: `CATEGORIES` (`src/constants/categories.ts`) is ordered like a supermarket walk (Fruit & Veg → Bakery → … → Cleaning → Other) and the List tab's default "Aisle" sort groups sections in that order. The old catch-all `groceries` id was retired — `resolveCategory` (`src/lib/smart-categorize.ts`) re-guesses any unknown/legacy category from the item name on fetch and on cache read, so never index `CATEGORY_BY_ID` with a raw DB value. Older app builds crash on category ids they don't know, so every household member needs the same app version after a category change. The List tab's Sort-by (Aisle/Person/Date added, `src/lib/list-sections.ts`) is a per-device AsyncStorage preference (`pref:list-sort`).
 - **Appointments (Calendar tab)**: `src/hooks/use-appointments.ts` (`AppointmentsProvider`, mounted in `_layout.tsx` inside `ShoppingListProvider`) follows the same provider + cache-then-network + realtime pattern as the shopping list, against the `appointments` table (`supabase/migration_appointments.sql`, also folded into `schema.sql`; `replica identity full` for the same DELETE reason below). `src/components/month-calendar.tsx` is the shared month grid used by both the Calendar tab and the purchase `DatePicker`.
@@ -47,3 +47,48 @@ Package `com.zibazamani.basketbuddy` is live on Google Play: `https://play.googl
 - **Production access requires a closed test with ≥12 testers opted in continuously for the 14 days immediately before requesting access** (Google policy for accounts created after 2023-11-13) — opting out and back in resets that tester's clock. Since ~April 2026 Google also checks for genuine engagement (testers must actually open/use the app repeatedly), not just opt in. Internal Testing participation never counts toward this gate — only Closed/Open Test does.
 - The reviewer test account (`.reviewer-credentials.txt`, gitignored — invite code lives there, not here) has a pre-populated "Review Household" — its Home membership has been found missing twice (again 2026-09-24, alongside the sample items being replaced by a gibberish item), almost certainly Google Play's pre-launch-report robots signing in with these credentials and tapping around ("Leave this Home" had no confirmation until then). Rejoining via the invite code and re-seeding Milk/Bananas/Eggs(purchased) fixes it. Re-verify this account has active Home membership before each submission.
 - Play Store screenshots (`assets/images/play-store-screenshots/`) were captured via `npx expo start --web`, not a native emulator/simulator. `MaxContentWidth = 800` in `src/constants/theme.ts` centers content on wide viewports — the browser window needs to be narrowed below 800px for screenshots to render edge-to-edge like a real phone.
+
+## Social sign-in via Render (2026-10-16)
+
+Google and Apple sign-in no longer use Supabase's own OAuth/`signInWithIdToken`. They work like Atossa's:
+the app gets an identity token natively (`expo-apple-authentication`; `@react-native-google-signin/google-signin`
+for Google), POSTs it to `https://atossa-backend.onrender.com/basket-buddy/auth/{apple,google}`, and installs the
+returned **Supabase** session with `supabase.auth.setSession`. Code: `src/lib/social-auth.ts` + `src/hooks/use-auth.ts`.
+All data, RLS and realtime stay on Supabase unchanged; email/password still talks to Supabase directly.
+
+- **Server side lives in the atossa repo**, not here: `backend/app/routers/basket_buddy.py` +
+  `backend/app/services/basket_buddy_auth.py` (deployed from atossa's `mvp-symptom-capture` branch). It reuses
+  Atossa's token verification (`social_auth.py`, verified email required), then uses this Supabase project's admin
+  API: create the user pre-confirmed if new (`nickname` metadata → `handle_new_user` trigger), generate a magic link
+  (not emailed), verify its `hashed_token` → session. Users are matched **by email**, so existing accounts keep
+  their data. Nothing is stored in Atossa's database. Hosted inside Atossa's service on purpose: Render's free plan
+  is 750 instance-hours/month per workspace and Atossa's keep-warm ping already uses ~744, so a second service
+  could not stay awake.
+- **Render env vars (on `atossa-backend`)**: `BASKET_SUPABASE_SECRET_KEY` (this project's service_role / `sb_secret_`
+  key — the user sets it in the Render dashboard; never commit or print it), `BASKET_GOOGLE_WEB_CLIENT_ID`.
+  Defaults in atossa's `config.py`: `BASKET_SUPABASE_URL` = this project, `BASKET_APPLE_BUNDLE_ID` =
+  `com.zibazamani.basketbuddy`.
+- **App env vars (EAS `production` + `.env`)**: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (must equal the server's),
+  `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` (reversed iOS client ID). Optional
+  `EXPO_PUBLIC_AUTH_API_URL` (defaults to the Render URL). `app.config.ts` only mounts the Google plugin once
+  the URL scheme is set (the plugin throws without it). Android also needs an Android OAuth client in Google
+  Cloud with the Play signing key's SHA-1.
+- **Needs a new native build** (1.1.1+): it adds `@react-native-google-signin/google-signin` and removes
+  `expo-auth-session`, `expo-crypto`, `expo-web-browser`. Google sign-in does not work in Expo Go (the module is
+  stubbed there with a readable error); Apple sign-in does not work in Expo Go either (token audience is Expo Go's
+  bundle ID, not ours).
+- The Apple "Sign Up Not Completed" error (ticket `20000150113899`) appears in Apple's own sheet, before any token
+  reaches a server — this change does not fix it.
+- Supabase's Google/Apple providers in the dashboard are no longer used by the app; leave them until 1.1.0
+  (the build in review) is replaced, since that build still signs in through them.
+
+## Daily cloud health check (2026-10-16)
+
+Routine "Basket Buddy daily health check (5am)" (`trig_01VoggazE6z4nQLAmKYUc7XB`,
+https://claude.ai/code/routines/trig_01VoggazE6z4nQLAmKYUc7XB) runs every day at 05:00 **UTC** in Anthropic's
+cloud (independent of the laptop). It is read-only: `npm ci`, `tsc`, `eslint src`, `expo export --platform ios`
+and `expo install --check` on `main`. It keeps Supabase active with a REST query (publishable key) plus
+`/auth/v1/health`, and wakes Render (`/warmup`, `/basket-buddy/auth/*`). Read reports in the routine's
+run history at claude.ai/code/routines; full command list in WORKLOG.md 2026-10-16. If the routine's
+report says the Supabase project is paused, restore it from the Supabase dashboard.
+
