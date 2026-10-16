@@ -2,6 +2,20 @@
 
 Dated log of decisions, what was verified, and why. Newest first.
 
+## 2026-10-16 (later) — Cloud allowlist, Google OAuth clients, npm 10 lock fix
+
+- **Cloud environment "Default"** (claude.ai/code) network access changed from Trusted to **Custom** with
+  `atossa-backend.onrender.com` and `uwqmhhbxthnpgcbgvgqh.supabase.co` allowed, plus the default package-manager
+  list. Re-run `cse_018cQR9Ye3mQ6BLsCLWMoaFY`: Supabase REST 200 `[]`, auth health 200, Render `/warmup` 200 (1.5s),
+  `/basket-buddy/auth/apple` 401, so keep-alive works now. tsc, eslint and the iOS bundle pass.
+- **Google OAuth (project `basket-buddy-505719`):** reused the existing Web client as the audience and created an iOS
+  client "Basket Buddy iOS" for `com.zibazamani.basketbuddy`. IDs are in CLAUDE.md. `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`,
+  `_IOS_CLIENT_ID` and `_IOS_URL_SCHEME` were created in EAS (plaintext, all three environments) and added to `.env`.
+- **`npm ci` failed in the cloud only:** npm 10 there vs npm 11 locally. Regenerated `package-lock.json` with
+  `npx npm@10 install --package-lock-only`. `npm ci --dry-run` now passes on both npm 10 and 11.
+- **Still for the user (Render dashboard, `atossa-backend` → Environment):** `BASKET_GOOGLE_WEB_CLIENT_ID` =
+  the Web client ID above, and `BASKET_SUPABASE_SECRET_KEY`. Claude was blocked from editing Render env vars.
+
 ## 2026-10-16 — Daily 5am cloud health check
 
 **What:** routine "Basket Buddy daily health check (5am)", `trig_01VoggazE6z4nQLAmKYUc7XB`,

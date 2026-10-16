@@ -73,6 +73,15 @@ All data, RLS and realtime stay on Supabase unchanged; email/password still talk
   `EXPO_PUBLIC_AUTH_API_URL` (defaults to the Render URL). `app.config.ts` only mounts the Google plugin once
   the URL scheme is set (the plugin throws without it). Android also needs an Android OAuth client in Google
   Cloud with the Play signing key's SHA-1.
+- **Google OAuth clients (Google Cloud project `basket-buddy-505719`, set up 2026-10-16):** Web = existing
+  "Basket Buddy Web" `26319592248-opmaj600n8u25t50n1uggm95d2c2agup.apps.googleusercontent.com` (also what Supabase's
+  Google provider uses; it's the token audience). iOS = "Basket Buddy iOS"
+  `26319592248-u75rpg95amvomqf00e8g2dot96al2q9t.apps.googleusercontent.com`, URL scheme
+  `com.googleusercontent.apps.26319592248-u75rpg95amvomqf00e8g2dot96al2q9t`. All three `EXPO_PUBLIC_GOOGLE_*` are set in
+  EAS (production/preview/development) and `.env`. No Android client yet (needs the Play signing SHA-1).
+- **Lock file must satisfy npm 10:** the cloud health check (and possibly EAS) runs npm 10, which rejected a lock
+  written by npm 11 on the Mac (missing `@emnapi/*`, `typescript@5.9.3`). After dependency changes, regenerate with
+  `npx npm@10 install --package-lock-only --ignore-scripts` and check `npx npm@10 ci --dry-run` passes.
 - **Needs a new native build** (1.1.1+): it adds `@react-native-google-signin/google-signin` and removes
   `expo-auth-session`, `expo-crypto`, `expo-web-browser`. Google sign-in does not work in Expo Go (the module is
   stubbed there with a readable error); Apple sign-in does not work in Expo Go either (token audience is Expo Go's
