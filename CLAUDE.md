@@ -39,7 +39,7 @@ This is an Expo Router app (SDK 54, npm package `expo@^54.0.36`) — note this c
 
 Package `com.zibazamani.basketbuddy` is live on Google Play: `https://play.google.com/store/apps/details?id=com.zibazamani.basketbuddy`. The Play Console developer account ("Atossa") is owned by a co-founder (`rudenko.paul@gmail.com`), not the primary maintainer's personal Google account — sign in as the account owner to manage listing/release settings.
 
-**TestFlight build 12 (2026-10-16, v1.1.0, EAS `ed7031e3`)** is the first build with Google/Apple sign-in via Render; Apple sign-in confirmed working on device. Build 11 (below) is the one in App Review.
+**TestFlight build 12 (2026-10-16, v1.1.0, EAS `ed7031e3`)** is the first build with Google/Apple sign-in via Render; Apple **and Google** sign-in confirmed working on device. Build 11 (below) is the one in App Review.
 
 **Latest release (2026-09-24): v1.1.0** — Android versionCode 6 auto-submitted to the Closed Test `alpha` track (`eas.json` submit track is `alpha`, not `internal`); iOS build 11 uploaded to App Store Connect/TestFlight. Build numbers are remote/auto-incremented (`appVersionSource: remote`); only `expo.version` in `app.json` is bumped by hand. Production `eas build` commands are blocked by Claude Code's auto-mode classifier — hand the user the exact `! npx eas-cli build ...` command to run instead. The size cuts (removed native modules) landed after 1.1.0 and need a new build (1.1.1).
 
