@@ -2,6 +2,23 @@
 
 Dated log of decisions, what was verified, and why. Newest first.
 
+## 2026-10-16 (afternoon) — "Sign Up Not Completed" fixed: Apple capability reset + build 12
+
+- **Symptom:** Apple's own sheet said "Sign Up Not Completed" (same Apple ID works in Atossa; Groceries Mate never
+  appeared under iPhone Settings → Sign in with Apple, so Apple never finished a sign-up for this app). Nothing
+  reached Supabase or Render. App ID, profile ("basketbuddy AppStore 2026-08-28 SIWA fix") and Supabase Apple
+  provider (client ID `com.zibazamani.basketbuddy`) all looked correct.
+- **Fix (user did it in the Apple Developer portal; Claude was blocked from changing capabilities):** on the App ID
+  `com.zibazamani.basketbuddy`, untick Sign In with Apple → Save → Confirm, re-tick → Edit → "Enable as a primary
+  App ID" → Save → Confirm.
+- **Build 12** (1.1.0, EAS `ed7031e3-7dc1-4461-bd2c-fc33246e2cc9`, includes the Render sign-in) was built via `!`,
+  which is non-interactive, so EAS skipped profile validation and signed with the old profile; it still uploaded
+  to TestFlight fine (`eas submit --id ed7031e3… --non-interactive`, local ASC key `AuthKey_2VSRV4UVQ5.p8`).
+  For a real profile regeneration, run `eas build` from the macOS Terminal app (interactive).
+- **Verified:** on TestFlight build 12 the Apple sheet completed and Render logged
+  `11:41:30 POST /basket-buddy/auth/apple 200 OK`, i.e. Apple token verified + Supabase session minted
+  (so `BASKET_SUPABASE_SECRET_KEY` is right). The 1.1.0 build 11 in App Review predates the reset.
+
 ## 2026-10-16 (later) — Cloud allowlist, Google OAuth clients, npm 10 lock fix
 
 - **Cloud environment "Default"** (claude.ai/code) network access changed from Trusted to **Custom** with

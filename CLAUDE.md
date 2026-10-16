@@ -86,8 +86,9 @@ All data, RLS and realtime stay on Supabase unchanged; email/password still talk
   `expo-auth-session`, `expo-crypto`, `expo-web-browser`. Google sign-in does not work in Expo Go (the module is
   stubbed there with a readable error); Apple sign-in does not work in Expo Go either (token audience is Expo Go's
   bundle ID, not ours).
-- The Apple "Sign Up Not Completed" error (ticket `20000150113899`) appears in Apple's own sheet, before any token
-  reaches a server — this change does not fix it.
+- The Apple "Sign Up Not Completed" error (ticket `20000150113899`) was fixed 2026-10-16 by resetting the App ID's
+  Sign In with Apple capability (untick/save, re-tick as primary/save); verified on TestFlight build 12. If it ever
+  returns, do that reset first (see WORKLOG 2026-10-16 afternoon).
 - Supabase's Google/Apple providers in the dashboard are no longer used by the app; leave them until 1.1.0
   (the build in review) is replaced, since that build still signs in through them.
 
