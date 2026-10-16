@@ -18,7 +18,13 @@ Dated log of decisions, what was verified, and why. Newest first.
 - **Verified:** on TestFlight build 12 the Apple sheet completed and Render logged
   `11:41:30 POST /basket-buddy/auth/apple 200 OK`, i.e. Apple token verified + Supabase session minted
   (so `BASKET_SUPABASE_SECRET_KEY` is right). The 1.1.0 build 11 in App Review predates the reset.
-  **User confirmed on device: Apple and Google sign-in both work on build 12.**
+  **User confirmed on device: Apple sign-in works on build 12.**
+- **Google sign-in on build 12 first failed** with "Invalid Google identity token: Invalid audience" (Render log
+  `POST /basket-buddy/auth/google 401`; the sheet itself worked). Fixed server-side only, no new build (atossa
+  `Accept both of Basket Buddy's Google client IDs as token audiences`): the endpoint now accepts both the Web and
+  iOS client IDs (built into atossa `config.py` as `basket_google_known_client_ids`) in addition to
+  `BASKET_GOOGLE_WEB_CLIENT_ID`; other audiences are still rejected, at_hash still checked. Tested with locally
+  signed tokens, deployed, then **user confirmed Google sign-in works on build 12.**
 
 ## 2026-10-16 (later) — Cloud allowlist, Google OAuth clients, npm 10 lock fix
 

@@ -66,6 +66,9 @@ All data, RLS and realtime stay on Supabase unchanged; email/password still talk
   their data. Nothing is stored in Atossa's database. Hosted inside Atossa's service on purpose: Render's free plan
   is 750 instance-hours/month per workspace and Atossa's keep-warm ping already uses ~744, so a second service
   could not stay awake.
+- **Google token audience:** the server accepts Basket Buddy's Web *and* iOS client IDs (hardcoded in atossa
+  `config.py` `basket_google_known_client_ids`) plus `BASKET_GOOGLE_WEB_CLIENT_ID`. An "Invalid audience" error on
+  Google sign-in means a new client ID that is in neither list. That's how build 12 first failed (fixed 2026-10-16).
 - **Render env vars (on `atossa-backend`)**: `BASKET_SUPABASE_SECRET_KEY` (this project's service_role / `sb_secret_`
   key — the user sets it in the Render dashboard; never commit or print it), `BASKET_GOOGLE_WEB_CLIENT_ID`.
   Defaults in atossa's `config.py`: `BASKET_SUPABASE_URL` = this project, `BASKET_APPLE_BUNDLE_ID` =
