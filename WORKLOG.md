@@ -10,8 +10,8 @@ Dated log of decisions, what was verified, and why. Newest first.
   Google sign-in still needs a new Android EAS build (the current Play build predates `@react-native-google-signin`).
 - **iOS signing profile:** instead of a new build, ran `npx eas-cli credentials -p ios` in the macOS Terminal (opened
   by Claude with `osascript`), production → log in to Apple → "Build Credentials: Set up all the required
-  credentials" → regenerate the invalid profile. **Pending:** as of this entry the Apple portal still lists
-  "basketbuddy AppStore 2026-08-28 SIWA fix" as Invalid; the user has to finish the Apple login in Terminal. No build or version was made (the user asked for no new EAS
+  credentials" → regenerate the invalid profile. **Done:** the user finished it in Terminal; the Apple portal now shows
+  "basketbuddy AppStore 2026-08-28 SIWA fix" as **Active** (capabilities: In-App Purchase, Sign In with Apple; expires 2027/04/19). No build or version was made (the user asked for no new EAS
   version yet).
 
 ## 2026-10-16 (afternoon) — "Sign Up Not Completed" fixed: Apple capability reset + build 12
